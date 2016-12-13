@@ -651,22 +651,23 @@ double NueFit2D::StdLikeComparison(vector<double> npar) {
 double NueFit2D::DoBinMinParam() {
 
   int sys_size = nBins;
-
+  std::cout << "Okay here DoBinMinParam! 1" << std::endl;
   if (sys_size > minuit->fMaxpar) {
     cout << "WARNING: WRONG MINUIT SIZE" << endl;
   }
-
+  std::cout << "Okay here DoBinMinParam! 2" << std::endl;
   Double_t * vstrt = new Double_t[sys_size];
   Double_t * stp = new Double_t[sys_size];
   Double_t * bmin = new Double_t[sys_size];
   Double_t * bmax = new Double_t[sys_size];
   Int_t ierflg = 0;
-
+  std::cout << "Okay here DoBinMinParam! 3" << std::endl;
   // Pass on the object and set the static function:
   gMinuit = minuit;
   minuit->SetObjectFit(this);
   minuit->SetFCN(binFunction);
 
+  std::cout << "Okay here DoBinMinParam! 4" << std::endl;
   // Set the parameters
   for (Int_t i = 0; i < sys_size; i++) {
     vstrt[i] = 0.0;
@@ -676,6 +677,7 @@ double NueFit2D::DoBinMinParam() {
     minuit->mnparm(i, Form("f%i", i), vstrt[i], stp[i], bmin[i], bmax[i], ierflg);
   }
 
+  std::cout << "Okay here DoBinMinParam! 5" << std::endl;
   // Resets function value and errors to UNDEFINED:
   minuit->mnrset(1);
 
@@ -684,10 +686,10 @@ double NueFit2D::DoBinMinParam() {
 
   // Max iterations:
   minuit->SetMaxIterations(500);
-
+  std::cout << "Okay here DoBinMinParam! 6" << std::endl;
   // Go minimize!
   minuit->Migrad();
-
+  std::cout << "Okay here DoBinMinParam! 7" << std::endl;
   // Get the minimum for the function
   double minpoint = minuit->fAmin;
 
@@ -5860,7 +5862,6 @@ void NueFit2D::RunSterileFit() {
     nexp_signal_min->Reset();
     nexp_min->Reset();
 
-    std::cout << "Okay here!" << std::endl;
     if ((FracErr_Bkgd != 0) && (FracErr_Sig != 0)) {
       GenerateOneExperiment(nexp_bkgd, nexp_signal);
       // Debug mode
@@ -5870,6 +5871,7 @@ void NueFit2D::RunSterileFit() {
          }
        */
       // if (NObs >= nexp_min) {
+      std::cout << "Okay here!" << std::endl;
       dchi[nf] = BinLikelihood() - DoBinMinParam();
       cout << "Min LNL value: " << DoBinMinParam() << endl;
       // } else {
