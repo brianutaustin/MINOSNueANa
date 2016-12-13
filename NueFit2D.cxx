@@ -5692,53 +5692,53 @@ void NueFit2D::Run2DSterileSlice() {
  * Find the chisquare value at a single point in the sterile nue grid.
  */
 /*
-void NueFit2D::RunSterileFit() {
-  if (NObs == 0) {
+   void NueFit2D::RunSterileFit() {
+   if (NObs == 0) {
     cout << "NObs not set.  Quitting..." << endl;
     return;
-  }
+   }
 
-  if (FitMethod == 1 && (FracErr_Bkgd == 0 || FracErr_Sig == 0)) {
+   if (FitMethod == 1 && (FracErr_Bkgd == 0 || FracErr_Sig == 0)) {
     cout << "FracErr_Bkgd and FracErr_Sig need to be set for ScaledChi2.  Quitting..." << endl;
     return;
-  }
+   }
 
-  if (Extrap.size() == 0) {
+   if (Extrap.size() == 0) {
     cout << "No Extrapolate2D input.  Quitting..." << endl;
     return;
-  }
+   }
 
-  if (FitMethod == 4) {
+   if (FitMethod == 4) {
     DefineBinDlnLMinuit();
-  }
-  Bkgd = (TH1D *) NObs->Clone("Bkgd");
-  Bkgd->Reset();
-  Sig = (TH1D *) NObs->Clone("Sig");
-  Sig->Reset();
-  NExp = (TH1D *) NObs->Clone("NExp");
-  NExp->Reset();
+   }
+   Bkgd = (TH1D *) NObs->Clone("Bkgd");
+   Bkgd->Reset();
+   Sig = (TH1D *) NObs->Clone("Sig");
+   Sig->Reset();
+   NExp = (TH1D *) NObs->Clone("NExp");
+   NExp->Reset();
 
-  for (unsigned int ie = 0; ie < Extrap.size(); ie++) {
+   for (unsigned int ie = 0; ie < Extrap.size(); ie++) {
     Extrap[ie]->GetPrediction();
-  }
+   }
 
-  if (ErrorMatrix == 0) {
+   if (ErrorMatrix == 0) {
     ErrorMatrix = new TH2D("ErrorMatrix", "", nBins, -0.5, nBins - 0.5, nBins, -0.5, nBins - 0.5);
-  }
+   }
 
-  if (InvErrorMatrix == 0) {
+   if (InvErrorMatrix == 0) {
     InvErrorMatrix = new TH2D("InvErrorMatrix", "", nBins, -0.5, nBins - 0.5, nBins, -0.5, nBins - 0.5);
-  }
+   }
 
-  for (unsigned int ie = 0; ie < Extrap.size(); ie++) {
+   for (unsigned int ie = 0; ie < Extrap.size(); ie++) {
     Extrap[ie]->SetSinSqTh14(SinSqTh14Low);
     Extrap[ie]->SetSinSqTh24(SinSqTh24Low);
     Extrap[ie]->OscillatePrediction();
-  }
+   }
 
-  unsigned int Nf = 1000;
-  double * chi = new double[Nf];
-  for (unsigned int nf = 0; nf < Nf; nf++) {
+   unsigned int Nf = 1000;
+   double * chi = new double[Nf];
+   for (unsigned int nf = 0; nf < Nf; nf++) {
     Bkgd->Reset();
     Sig->Reset();
     NExp->Reset();
@@ -5755,13 +5755,13 @@ void NueFit2D::RunSterileFit() {
     }
 
     cout << "chi[" << nf << "]: " << chi[nf] << endl;
-  }
-  return;
-}
-*/
+   }
+   return;
+   }
+ */
 
 /* Dung Phan (NueSterileSearch)
-*/
+ */
 
 void NueFit2D::RunSterileFit() {
   if (NObs == 0) {
@@ -5785,13 +5785,13 @@ void NueFit2D::RunSterileFit() {
 
   TH1D * nexp_bkgd = new TH1D("nexp_bkgd", "", nBins, -0.5, nBins - 0.5);
   TH1D * nexp_signal = new TH1D("nexp_signal", "", nBins, -0.5, nBins - 0.5);
-  TH1D * nexp = new TH1D("nexp", "", nBins, -0.5, nBins - 0.5); 
-  
-  
+  TH1D * nexp = new TH1D("nexp", "", nBins, -0.5, nBins - 0.5);
+
+
   TH1D * nexp_bkgd_min = new TH1D("nexp_bkgd_min", "", nBins, -0.5, nBins - 0.5);
   TH1D * nexp_signal_min = new TH1D("nexp_signal_min", "", nBins, -0.5, nBins - 0.5);
   TH1D * nexp_min = new TH1D("nexp_min", "", nBins, -0.5, nBins - 0.5);
-  
+
 
   for (unsigned int ie = 0; ie < Extrap.size(); ie++) {
     Extrap[ie]->GetPrediction();
@@ -5807,42 +5807,42 @@ void NueFit2D::RunSterileFit() {
 
   unsigned int Nf = 1000; // number of fake experiments
   double * dchi = new double[Nf];
-  TH1D *err = new TH1D("err","",1,-0.5,0.5);  		err->SetBinContent(1, 0.05);
-  TH1D *sigerr = new TH1D("sigerr","",1,-0.5,0.5);	sigerr->SetBinContent(1, 0.05);
+  TH1D * err = new TH1D("err", "", 1, -0.5, 0.5);            err->SetBinContent(1, 0.05);
+  TH1D * sigerr = new TH1D("sigerr", "", 1, -0.5, 0.5);      sigerr->SetBinContent(1, 0.05);
   SetFracBkgdError(err);
   SetFracSigError(sigerr);
- 
+
 
   gRandom->SetSeed(0);
   std::ofstream ofs;
   ostringstream strTh14, strTh24;
   strTh14 << SinSqTh14Low;
   strTh24 << SinSqTh24Low;
-  //string filestr = "dm_" + strTh14.str() + "_" + strTh24.str();
-  ofs.open ("test.txt", std::ofstream::out | std::ofstream::app);
+  // string filestr = "dm_" + strTh14.str() + "_" + strTh24.str();
+  ofs.open("test.txt", std::ofstream::out | std::ofstream::app);
   for (unsigned int nf = 0; nf < Nf; nf++) {
     for (unsigned int ie = 0; ie < Extrap.size(); ie++) {
       Extrap[ie]->SetPrintResult();
       Extrap[ie]->SetSinSqTh14(SinSqTh14Low);
       Extrap[ie]->SetSinSqTh24(SinSqTh24Low);
-      Extrap[ie]->SetOscPar(OscPar::kTh34, gRandom->Uniform(0., 0.5*3.1415));
-      //cout << "Random: " << gRandom->Uniform(0., 0.5*3.1415) << endl;
-      Extrap[ie]->SetOscPar(OscPar::kDelta, gRandom->Uniform(0., 2*3.1415));
-      Extrap[ie]->SetOscPar(OscPar::kDelta14, gRandom->Uniform(0., 2*3.1415));
+      Extrap[ie]->SetOscPar(OscPar::kTh34, gRandom->Uniform(0., 0.5 * 3.1415));
+      // cout << "Random: " << gRandom->Uniform(0., 0.5*3.1415) << endl;
+      Extrap[ie]->SetOscPar(OscPar::kDelta, gRandom->Uniform(0., 2 * 3.1415));
+      Extrap[ie]->SetOscPar(OscPar::kDelta14, gRandom->Uniform(0., 2 * 3.1415));
       Extrap[ie]->SetOscPar(OscPar::kDelta24, 0);
       Extrap[ie]->OscillatePrediction();
     }
     nexp_bkgd->Reset();
     nexp_signal->Reset();
-    nexp->Reset(); 
+    nexp->Reset();
 
-   
+
     for (unsigned int ie = 0; ie < Extrap.size(); ie++) {
       nexp_bkgd->Add(Extrap[ie]->Pred_TotalBkgd_VsBinNumber);
       nexp_signal->Add(Extrap[ie]->Pred_Signal_VsBinNumber);
     }
     nexp->Add(nexp_bkgd);
-    nexp->Add(nexp_signal); 
+    nexp->Add(nexp_signal);
 
     // Background only
     for (unsigned int ie = 0; ie < Extrap.size(); ie++) {
@@ -5850,7 +5850,7 @@ void NueFit2D::RunSterileFit() {
       Extrap[ie]->SetSinSqTh14(0);
       Extrap[ie]->SetSinSqTh24(0);
       Extrap[ie]->SetOscPar(OscPar::kTh34, 0);
-      //cout << "Random: " << gRandom->Uniform(0., 0.5*3.1415) << endl;
+      // cout << "Random: " << gRandom->Uniform(0., 0.5*3.1415) << endl;
       Extrap[ie]->SetOscPar(OscPar::kDelta, 0);
       Extrap[ie]->SetOscPar(OscPar::kDelta14, 0);
       Extrap[ie]->SetOscPar(OscPar::kDelta24, 0);
@@ -5860,22 +5860,24 @@ void NueFit2D::RunSterileFit() {
     nexp_signal_min->Reset();
     nexp_min->Reset();
 
+    std::cout << "Okay here!" << std::endl;
     if ((FracErr_Bkgd != 0) && (FracErr_Sig != 0)) {
       GenerateOneExperiment(nexp_bkgd, nexp_signal);
       // Debug mode
       /*
-      for (unsigned int countbin = 0; countbin < 18; countbin++) {
-      	cout << "Nobs: " << NObs->GetBinContent(countbin+1) << "\tNexp: " << nexp->GetBinContent(countbin+1) << endl;
-      }
-      */
-      //if (NObs >= nexp_min) {
-	dchi[nf] = BinLikelihood()- DoBinMinParam();
-	cout << "Min LNL value: " << DoBinMinParam() << endl;
-      //} else {
+         for (unsigned int countbin = 0; countbin < 18; countbin++) {
+         cout << "Nobs: " << NObs->GetBinContent(countbin+1) << "\tNexp: " << nexp->GetBinContent(countbin+1) << endl;
+         }
+       */
+      // if (NObs >= nexp_min) {
+      dchi[nf] = BinLikelihood() - DoBinMinParam();
+      cout << "Min LNL value: " << DoBinMinParam() << endl;
+      // } else {
       //  dchi[nf] = PoissonChi2(nexp) - PoissonChi2(nexp_min);
-      //}
+      // }
     }
-    
+
+    std::cout << "Okay here too" << std::endl;
     cout << "dchi[" << nf << "]: " << dchi[nf] << endl;
     ofs << dchi[nf] << endl;
   }
