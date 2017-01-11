@@ -1216,21 +1216,27 @@ void GridGen::RunMultiBinOscParErrsSterileFit(string s, double SetDM41) {
   dmsq41 = SetDM41;
   ssq2th14 = SinSqTh14GridValue;
   ssq2th24 = SinSqTh24GridValue;
-  Extrap[ie]->SetOscPar(OscPar::kDm41, dmsq41);
-  Extrap[ie]->SetOscPar(OscPar::kTh14, TMath::ASin(TMath::Sqrt(ssq2th14)));
-  Extrap[ie]->SetOscPar(OscPar::kTh24, TMath::ASin(TMath::Sqrt(ssq2th24)));
+  for (unsigned int ie = 0; ie < Extrap.size(); ie++) {
+    Extrap[ie]->SetOscPar(OscPar::kDm41, dmsq41);
+    Extrap[ie]->SetOscPar(OscPar::kTh14, TMath::ASin(TMath::Sqrt(ssq2th14)));
+    Extrap[ie]->SetOscPar(OscPar::kTh24, TMath::ASin(TMath::Sqrt(ssq2th24)));
+  }
   for (int iTh34 = 0; iTh34 < 3; iTh34++) {
     th34 = (double)iTh34 * (TMath::Pi() / 4);
-    Extrap[ie]->SetOscPar(OscPar::kTh34, th34);
+    for (unsigned int ie = 0; ie < Extrap.size(); ie++) {
+      Extrap[ie]->SetOscPar(OscPar::kTh34, th34);
+    }
     for (int iDelCP = 0; iDelCP < 3; iDelCP++) {
       delta13 = (double)iDelCP * (2 * TMath::Pi() / 3);
-      Extrap[ie]->SetOscPar(OscPar::kDelta, 0);
+      for (unsigned int ie = 0; ie < Extrap.size(); ie++) {
+        Extrap[ie]->SetOscPar(OscPar::kDelta, delta13);
+      }
       for (int iDelEff = 0; iDelEff < 8; iDelEff++) {
         delta14 = (double)(((double)(rand() % 100)) / 100) * 2 * TMath::Pi();
         delta24 = (double)iDelEff * (TMath::Pi() / 4) + delta14;
-        Extrap[ie]->SetOscPar(OscPar::kDelta14, delta14);
-        Extrap[ie]->SetOscPar(OscPar::kDelta24, delta24);
-        for (unsigned int ie = 0; ie < Extrap.size(); ie++) { // Nominal
+        for (unsigned int ie = 0; ie < Extrap.size(); ie++) { // Get nominal prediction
+          Extrap[ie]->SetOscPar(OscPar::kDelta14, delta14);
+          Extrap[ie]->SetOscPar(OscPar::kDelta24, delta24);
           Extrap[ie]->SetOscPar(OscPar::kTh12, Theta12);
           Extrap[ie]->SetOscPar(OscPar::kTh13, Theta13);
           Extrap[ie]->SetOscPar(OscPar::kTh23, Theta23);
@@ -1261,11 +1267,11 @@ void GridGen::RunMultiBinOscParErrsSterileFit(string s, double SetDM41) {
         noff = 0;
         for (unsigned int i = 0; i < nbins; i++) {
           delnexphist[i]->Reset();
-          delnexphist[i]->SetName(Form("DeltaNexp_%i_%i_Diag_%i", iTh14, iTh24, i));
+          delnexphist[i]->SetName(Form("DeltaNexp_%i_%i_%i_Diag_%i", iTh34, iDelCP, iDelEff, i));
           for (unsigned int k = 0; k < nbins; k++) {
             if (k > i) {
               delnexphist_offdiag[noff]->Reset();
-              delnexphist_offdiag[noff]->SetName(Form("DeltaNexp_%i_%i_OffDiag_%i_%i", iTh14, iTh24, i, k));
+              delnexphist_offdiag[noff]->SetName(Form("DeltaNexp_%i_%i_%i_OffDiag_%i_%i", iTh34, iDelCP, iDelEff, i, k));
               noff++;
             }
           }
