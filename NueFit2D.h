@@ -36,7 +36,6 @@ class NueFit2D: public TObject {
     void RunFCAnalytical();
     void RunPseudoExperiments();
 
-    void RunSterileFit();
     virtual void RunMultiBinPseudoExpts(bool Print=true);
     void RunFCTraditional();
     void RunMultiBinFC();
@@ -304,7 +303,10 @@ class NueFit2D: public TObject {
     /** Dung Phan
     *** Sterile package
     **/
-
+public:
+    void ReadGridFilesSterileFit();
+    void RunMultiBinPseudoExptsSterileFit(bool);
+    void RunSterileFit(); // Obsolete (don't use except when you're Dung)
 
 
     ClassDef(NueFit2D,1)
