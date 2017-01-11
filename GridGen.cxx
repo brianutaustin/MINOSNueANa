@@ -1195,9 +1195,6 @@ void GridGen::RunMultiBinOscParErrsSterileFit(string s, double SetDM41) {
     }
   }
 
-  // Define dmsq41 values;
-  dmsq41 = SetDM41;
-
   vector<double> nexp, nobs;
   vector<TH1D *> delnexphist;
   vector<TH1D *> delnexphist_offdiag;
@@ -1216,201 +1213,128 @@ void GridGen::RunMultiBinOscParErrsSterileFit(string s, double SetDM41) {
 
   TFile * f = new TFile(gSystem->ExpandPathName(s.c_str()), "RECREATE");
 
-
-  int l, u;
-  l = 0;
-  for (int iTh14 = 0; iTh14 < 1; iTh14++) {
-    ssq2th14 = SinSqTh14GridValue;
-
-    for (int iTh24 = 0; iTh24 < 1; iTh24++) {
-      ssq2th24 = SinSqTh24GridValue;
-
-      // get nominal prediction
-      for (unsigned int ie = 0; ie < Extrap.size(); ie++) {
-        Extrap[ie]->SetOscPar(OscPar::kTh12, Theta12);
-        Extrap[ie]->SetOscPar(OscPar::kTh13, Theta13);
-        Extrap[ie]->SetOscPar(OscPar::kTh23, Theta23);
-        Extrap[ie]->SetOscPar(OscPar::kTh14, TMath::ASin(TMath::Sqrt(ssq2th14)));
-        Extrap[ie]->SetOscPar(OscPar::kTh24, TMath::ASin(TMath::Sqrt(ssq2th24)));
-        Extrap[ie]->SetOscPar(OscPar::kTh34, 0);
-        Extrap[ie]->SetOscPar(OscPar::kDeltaM12, DeltaMSq12);
-        Extrap[ie]->SetOscPar(OscPar::kDeltaM23, DeltaMSq23);
-        Extrap[ie]->SetOscPar(OscPar::kDm41, dmsq41);
-        Extrap[ie]->SetOscPar(OscPar::kDelta, 0);
-        Extrap[ie]->SetOscPar(OscPar::kDelta14, 0);
-        Extrap[ie]->SetOscPar(OscPar::kDelta24, 0);
-        if (!NormalHier) {
-          Extrap[ie]->InvertMassHierarchy();
-        }
-        Extrap[ie]->OscillatePrediction();
-      }
-
-      for (unsigned int i = 0; i < nbins; i++) {
-        sig[i] = 0;
-        bkgd[i] = 0;
-        int ir = int(i / nPID);
-        int ip = i % nPID;
-        for (unsigned int ie = 0; ie < Extrap.size(); ie++) {
-          bkgd[i] += (Extrap[ie]->Pred_TotalBkgd_VsBinNumber->GetBinContent(i + 1));
-          sig[i] += (Extrap[ie]->Pred_Signal_VsBinNumber->GetBinContent(i + 1));
-
-          nc[i][ie] = Extrap[ie]->Pred[Background::kNC]->GetBinContent(ip + 1, ir + 1);
-          numucc[i][ie] = Extrap[ie]->Pred[Background::kNuMuCC]->GetBinContent(ip + 1, ir + 1);
-          bnue[i][ie] = Extrap[ie]->Pred[Background::kBNueCC]->GetBinContent(ip + 1, ir + 1);
-          tau[i][ie] = Extrap[ie]->Pred[Background::kNuTauCC]->GetBinContent(ip + 1, ir + 1);
-          nue[i][ie] = Extrap[ie]->Pred[Background::kNueCC]->GetBinContent(ip + 1, ir + 1);
-        }
-        nexp[i] = sig[i] + bkgd[i];
-      }
-
-      // do pseudo experiments
-      noff = 0;
-      for (unsigned int i = 0; i < nbins; i++) {
-        delnexphist[i]->Reset();
-        delnexphist[i]->SetName(Form("DeltaNexp_%i_%i_Diag_%i", iTh14, iTh24, i));
-        for (unsigned int k = 0; k < nbins; k++) {
-          if (k > i) {
-            delnexphist_offdiag[noff]->Reset();
-            delnexphist_offdiag[noff]->SetName(Form("DeltaNexp_%i_%i_OffDiag_%i_%i", iTh14, iTh24, i, k));
-            noff++;
-          }
-        }
-      }
-      for (unsigned int u = 0; u < NumExpts; u++) {
-        double theta12 = Theta12 + AsymGaus(dTheta12_dn, dTheta12_up);
-        double theta13 = Theta13 + AsymGaus(dTheta13_dn, dTheta13_up);
-        double theta23 = Theta23 + AsymGaus(dTheta23_dn, dTheta23_up);
-        double dm21 = DeltaMSq12 + AsymGaus(dDeltaMSq12_dn, dDeltaMSq12_up);
-        double dm32 = DeltaMSq23 + AsymGaus(dDeltaMSq23_dn, dDeltaMSq23_up);
-        switch (rand() % 11) {
-          case 0: case 1: case 2: case 3: {
-            th34 = 0;
-            break;
-          }
-          case 4: case 5: case 6: case 7: {
-            th34 = TMath::Pi() / 4;
-            break;
-          }
-          case 8: case 9: case 10: case 11: {
-            th34 = TMath::Pi() / 2;
-          }
-        }
-        switch (rand() % 11) {
-          case 0: case 1: case 2: case 3: {
-            delta13 = 0;
-            break;
-          }
-          case 4: case 5: case 6: case 7: {
-            delta13 = 2 * TMath::Pi() / 3;
-            break;
-          }
-          case 8: case 9: case 10: case 11: {
-            delta13 = 4 * TMath::Pi() / 3;
-          }
-        }
+  dmsq41 = SetDM41;
+  ssq2th14 = SinSqTh14GridValue;
+  ssq2th24 = SinSqTh24GridValue;
+  Extrap[ie]->SetOscPar(OscPar::kDm41, dmsq41);
+  Extrap[ie]->SetOscPar(OscPar::kTh14, TMath::ASin(TMath::Sqrt(ssq2th14)));
+  Extrap[ie]->SetOscPar(OscPar::kTh24, TMath::ASin(TMath::Sqrt(ssq2th24)));
+  for (int iTh34 = 0; iTh34 < 3; iTh34++) {
+    th34 = (double)iTh34 * (TMath::Pi() / 4);
+    Extrap[ie]->SetOscPar(OscPar::kTh34, th34);
+    for (int iDelCP = 0; iDelCP < 3; iDelCP++) {
+      delta13 = (double)iDelCP * (2 * TMath::Pi() / 3);
+      Extrap[ie]->SetOscPar(OscPar::kDelta, 0);
+      for (int iDelEff = 0; iDelEff < 8; iDelEff++) {
         delta14 = (double)(((double)(rand() % 100)) / 100) * 2 * TMath::Pi();
-        switch (rand() % 11) {
-          case 0: {
-            delta24 = (0 * TMath::Pi() / 8) + delta14;
-            break;
-          }
-          case 1: {
-            delta24 = (2 * TMath::Pi() / 8) + delta14;
-            break;
-          }
-          case 2: {
-            delta24 = (4 * TMath::Pi() / 8) + delta14;
-            break;
-          }
-          case 3: {
-            delta24 = (6 * TMath::Pi() / 8) + delta14;
-            break;
-          }
-          case 4: {
-            delta24 = (8 * TMath::Pi() / 8) + delta14;
-            break;
-          }
-          case 5: {
-            delta24 = (10 * TMath::Pi() / 8) + delta14;
-            break;
-          }
-          case 6: {
-            delta24 = (12 * TMath::Pi() / 8) + delta14;
-            break;
-          }
-          case 7: {
-            delta24 = (14 * TMath::Pi() / 8) + delta14;
-            break;
-          }
-        }
-
-        for (unsigned int ie = 0; ie < Extrap.size(); ie++) {
-          Extrap[ie]->SetOscPar(OscPar::kTh12, theta12);
-          Extrap[ie]->SetOscPar(OscPar::kTh13, theta13);
-          Extrap[ie]->SetOscPar(OscPar::kTh23, theta23);
-          Extrap[ie]->SetOscPar(OscPar::kDeltaM12, dm21);
-          Extrap[ie]->SetOscPar(OscPar::kDeltaM23, dm32);
-          Extrap[ie]->SetOscPar(OscPar::kTh34, th34);
-          Extrap[ie]->SetOscPar(OscPar::kDelta, delta13);
-          Extrap[ie]->SetOscPar(OscPar::kDelta14, delta14);
-          Extrap[ie]->SetOscPar(OscPar::kDelta24, delta24);
-          if (!NormalHier) {
-            Extrap[ie]->InvertMassHierarchy();
-          }
+        delta24 = (double)iDelEff * (TMath::Pi() / 4) + delta14;
+        Extrap[ie]->SetOscPar(OscPar::kDelta14, delta14);
+        Extrap[ie]->SetOscPar(OscPar::kDelta24, delta24);
+        for (unsigned int ie = 0; ie < Extrap.size(); ie++) { // Nominal
+          Extrap[ie]->SetOscPar(OscPar::kTh12, Theta12);
+          Extrap[ie]->SetOscPar(OscPar::kTh13, Theta13);
+          Extrap[ie]->SetOscPar(OscPar::kTh23, Theta23);
+          Extrap[ie]->SetOscPar(OscPar::kDeltaM12, DeltaMSq12);
+          Extrap[ie]->SetOscPar(OscPar::kDeltaM23, DeltaMSq23);
+          //if (!NormalHier) { Extrap[ie]->InvertMassHierarchy(); }
           Extrap[ie]->OscillatePrediction();
         }
 
+        for (unsigned int i = 0; i < nbins; i++) {
+          sig[i] = 0;
+          bkgd[i] = 0;
+          int ir = int(i / nPID);
+          int ip = i % nPID;
+          for (unsigned int ie = 0; ie < Extrap.size(); ie++) {
+            bkgd[i] += (Extrap[ie]->Pred_TotalBkgd_VsBinNumber->GetBinContent(i + 1));
+            sig[i] += (Extrap[ie]->Pred_Signal_VsBinNumber->GetBinContent(i + 1));
+            nc[i][ie] = Extrap[ie]->Pred[Background::kNC]->GetBinContent(ip + 1, ir + 1);
+            numucc[i][ie] = Extrap[ie]->Pred[Background::kNuMuCC]->GetBinContent(ip + 1, ir + 1);
+            bnue[i][ie] = Extrap[ie]->Pred[Background::kBNueCC]->GetBinContent(ip + 1, ir + 1);
+            tau[i][ie] = Extrap[ie]->Pred[Background::kNuTauCC]->GetBinContent(ip + 1, ir + 1);
+            nue[i][ie] = Extrap[ie]->Pred[Background::kNueCC]->GetBinContent(ip + 1, ir + 1);
+          }
+          nexp[i] = sig[i] + bkgd[i];
+        }
+
+        // do pseudo experiments
         noff = 0;
         for (unsigned int i = 0; i < nbins; i++) {
-          nobs[i] = 0;
-          for (unsigned int ie = 0; ie < Extrap.size(); ie++) {
-            nobs[i] += (Extrap[ie]->Pred_TotalBkgd_VsBinNumber->GetBinContent(i + 1));
-            nobs[i] += (Extrap[ie]->Pred_Signal_VsBinNumber->GetBinContent(i + 1));
-          }
-          delnexphist[i]->Fill((nobs[i] - nexp[i]) / (nexp[i]));
-        }
-        for (unsigned int i = 0; i < nbins; i++) {
+          delnexphist[i]->Reset();
+          delnexphist[i]->SetName(Form("DeltaNexp_%i_%i_Diag_%i", iTh14, iTh24, i));
           for (unsigned int k = 0; k < nbins; k++) {
             if (k > i) {
-              delnexphist_offdiag[noff]->Fill((nobs[i] - nexp[i]) * (nobs[k] - nexp[k]) / (nexp[i] * nexp[k]));
+              delnexphist_offdiag[noff]->Reset();
+              delnexphist_offdiag[noff]->SetName(Form("DeltaNexp_%i_%i_OffDiag_%i_%i", iTh14, iTh24, i, k));
               noff++;
             }
           }
         }
-      }
 
-      noff = 0;
-      for (unsigned int i = 0; i < nbins; i++) {
-        oscparerr[i] = delnexphist[i]->GetRMS();
-        delnexphist[i]->Write();
-        for (unsigned int k = 0; k < nbins; k++) {
-          if (k > i) {
-            oscparerr_offdiag[noff] = delnexphist_offdiag[noff]->GetRMS();
-            if (delnexphist_offdiag[noff]->GetMean() < 0) {
-              oscparerr_offdiag[noff] = -1. * oscparerr_offdiag[noff];
+        for (unsigned int u = 0; u < NumExpts; u++) {
+          double theta12 = Theta12 + AsymGaus(dTheta12_dn, dTheta12_up);
+          double theta13 = Theta13 + AsymGaus(dTheta13_dn, dTheta13_up);
+          double theta23 = Theta23 + AsymGaus(dTheta23_dn, dTheta23_up);
+          double dm21 = DeltaMSq12 + AsymGaus(dDeltaMSq12_dn, dDeltaMSq12_up);
+          double dm32 = DeltaMSq23 + AsymGaus(dDeltaMSq23_dn, dDeltaMSq23_up);
+
+          for (unsigned int ie = 0; ie < Extrap.size(); ie++) {
+            Extrap[ie]->SetOscPar(OscPar::kTh12, theta12);
+            Extrap[ie]->SetOscPar(OscPar::kTh13, theta13);
+            Extrap[ie]->SetOscPar(OscPar::kTh23, theta23);
+            Extrap[ie]->SetOscPar(OscPar::kDeltaM12, dm21);
+            Extrap[ie]->SetOscPar(OscPar::kDeltaM23, dm32);
+            //if (!NormalHier) { Extrap[ie]->InvertMassHierarchy(); }
+            Extrap[ie]->OscillatePrediction();
+          }
+
+          noff = 0;
+          for (unsigned int i = 0; i < nbins; i++) {
+            nobs[i] = 0;
+            for (unsigned int ie = 0; ie < Extrap.size(); ie++) {
+              nobs[i] += (Extrap[ie]->Pred_TotalBkgd_VsBinNumber->GetBinContent(i + 1));
+              nobs[i] += (Extrap[ie]->Pred_Signal_VsBinNumber->GetBinContent(i + 1));
             }
-            delnexphist_offdiag[noff]->Write();
-            noff++;
+            delnexphist[i]->Fill((nobs[i] - nexp[i]) / (nexp[i]));
+          }
+          for (unsigned int i = 0; i < nbins; i++) {
+            for (unsigned int k = 0; k < nbins; k++) {
+              if (k > i) {
+                delnexphist_offdiag[noff]->Fill((nobs[i] - nexp[i]) * (nobs[k] - nexp[k]) / (nexp[i] * nexp[k]));
+                noff++;
+              }
+            }
           }
         }
-      }
-      f->Close();
 
-      gROOT->cd("/");
-
-      for (unsigned int i = 0; i < nbins; i++) {
-        for (unsigned int ie = 0; ie < Extrap.size(); ie++) {
-          ftree2[i][ie]->Fill();
+        noff = 0;
+        for (unsigned int i = 0; i < nbins; i++) {
+          oscparerr[i] = delnexphist[i]->GetRMS();
+          delnexphist[i]->Write();
+          for (unsigned int k = 0; k < nbins; k++) {
+            if (k > i) {
+              oscparerr_offdiag[noff] = delnexphist_offdiag[noff]->GetRMS();
+              if (delnexphist_offdiag[noff]->GetMean() < 0) {
+                oscparerr_offdiag[noff] = -1. * oscparerr_offdiag[noff];
+              }
+              delnexphist_offdiag[noff]->Write();
+              noff++;
+            }
+          }
         }
-        ftree[i]->Fill();
-      }
+        f->Close();
 
-      f = new TFile(gSystem->ExpandPathName(s.c_str()), "UPDATE");
+        gROOT->cd("/");
 
-      if (l % 100 == 0) {
-        cout << 100. * l / ((nDeltaSteps + 1) * (nSinSq2Th13Steps + 1)) << "% complete" << endl;
+        for (unsigned int i = 0; i < nbins; i++) {
+          for (unsigned int ie = 0; ie < Extrap.size(); ie++) {
+            ftree2[i][ie]->Fill();
+          }
+          ftree[i]->Fill();
+        }
+
+        f = new TFile(gSystem->ExpandPathName(s.c_str()), "UPDATE");
       }
-      l++;
     }
   }
 
@@ -1427,6 +1351,8 @@ void GridGen::RunMultiBinOscParErrsSterileFit(string s, double SetDM41) {
   paramtree->Branch("DeltaMSq41", &dmsq41, "DeltaMSq41/D");
   paramtree->Branch("DeltaMSq23", &DeltaMSq23, "DeltaMSq23/D");
   paramtree->Branch("DeltaMSq12", &DeltaMSq12, "DeltaMSq12/D");
+  paramtree->Branch("SinSq2Th14", &ssq2th14, "SinSq2Th14/D");
+  paramtree->Branch("SinSq2Th24", &ssq2th24, "SinSq2Th24/D");
 
   if (!NormalHier) {
     DeltaMSq23 = -1. * DeltaMSq23;
