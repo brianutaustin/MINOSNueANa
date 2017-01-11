@@ -5833,9 +5833,7 @@ void NueFit2D::RunMultiBinPseudoExptsSterileFit(bool Print) {
   string file, ofile;
 
   // normal hierarchy
-
   TFile * f = new TFile(gSystem->ExpandPathName(outFileName.c_str()), "RECREATE");
-
   if (Print) {
     ofile = gSystem->ExpandPathName(outFileName.c_str());
     file = ofile.substr(0, ofile.length() - 5) + "_Normal.dat";
@@ -5852,17 +5850,11 @@ void NueFit2D::RunMultiBinPseudoExptsSterileFit(bool Print) {
     for (unsigned int j = 0; j < nBins; j++) {
       GridTree_Normal[j]->GetEntry(i);
       //nexp_bkgd->SetBinContent(j + 1, grid_background * GridScale_Normal);
-      //nexp_signal->SetBinContent(j + 1, grid_signal * GridScale_Normal);
       nexp_bkgd->SetBinContent(j + 1, grid_background);
       nexp_signal->SetBinContent(j + 1, grid_signal);
 
       for (unsigned int k = 0; k < Extrap.size(); k++) {
         GridTree_2_Normal[j][k]->GetEntry(i);
-        //nc[j][k] = grid_nc * GridScale_Normal;
-        //numucc[j][k] = grid_numucc * GridScale_Normal;
-        //bnuecc[j][k] = grid_bnuecc * GridScale_Normal;
-        //nutaucc[j][k] = grid_nutaucc * GridScale_Normal;
-        //sig[j][k] = grid_nue * GridScale_Normal;
         nc[j][k] = grid_nc;
         numucc[j][k] = grid_numucc;
         bnuecc[j][k] = grid_bnuecc;
@@ -5917,8 +5909,7 @@ void NueFit2D::RunMultiBinPseudoExptsSterileFit(bool Print) {
         myfile << endl;
       }
 
-      //chi2min = GetMinLikelihood(grid_delta, true);// Now I'm getting confused here!
-      chi2min = 0;
+      chi2min = GetMinLikelihoodSterileFit();
 
       ErrCalc->SetUseGrid(true); // will use the grid predictions set above
       delchi2 = 1e10;
@@ -6020,6 +6011,10 @@ void NueFit2D::ReadGridFilesSterileFit() {
         temp->SetBranchAddress("SinSq2Th14", &grid_sinsqth14);
         temp->SetBranchAddress("SinSq2Th24", &grid_sinsqth24);
         temp->SetBranchAddress("Dmsq41", &grid_dmsq41);
+        temp->SetBranchAddress("Delta13", &grid_delta13);
+        temp->SetBranchAddress("Delta14", &grid_delta14);
+        temp->SetBranchAddress("Delta24", &grid_delta24);
+        temp->SetBranchAddress("Theta34", &grid_th34);
         GridTree_2_Normal[i].push_back(temp);
       }
     }
@@ -6034,11 +6029,9 @@ void NueFit2D::ReadGridFilesSterileFit() {
     paramtree_Normal->SetBranchAddress("DeltaMSq23", &grid_n_dm2_32);
     paramtree_Normal->SetBranchAddress("DeltaMSq12", &grid_n_dm2_21);
     paramtree_Normal->SetBranchAddress("DeltaMSq41", &grid_dmsq41);
+    paramtree_Normal->SetBranchAddress("SinSq2Th14", &grid_sinsqth14);
+    paramtree_Normal->SetBranchAddress("SinSq2Th24", &grid_sinsqth24);
     paramtree_Normal->GetEntry(0);
-
-    if (GridNorm > 0) {
-      GridScale_Normal = GridNorm / fp;
-    }
   } else {
     cout << "Grid file (normal hierarchy) doesn't exist." << endl;
     return;
@@ -6047,7 +6040,7 @@ void NueFit2D::ReadGridFilesSterileFit() {
   return;
 }
 
-/*
+
 double NueFit2D::GetMinLikelihoodSterileFit() {
   if (NObs == 0) {
     cout << "NObs not set.  Quitting..." << endl;
@@ -6157,4 +6150,3 @@ double NueFit2D::GetMinLikelihoodSterileFit() {
 
   return minchi2;
 }
-*/
