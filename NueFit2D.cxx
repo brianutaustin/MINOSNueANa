@@ -2128,6 +2128,7 @@ void NueFit2D::RunPseudoExperiments() {
 
   return;
 }
+
 void NueFit2D::RunMultiBinPseudoExpts(bool Print) {
   if (FitMethod == 1 && (FracErr_Bkgd == 0 || FracErr_Sig == 0)) {
     cout << "FracErr_Bkgd and FracErr_Sig need to be set for ScaledChi2.  Quitting..." << endl;
@@ -5902,6 +5903,27 @@ void NueFit2D::RunSterileFit() {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* Dung Run
 */
 
@@ -5938,7 +5960,7 @@ void NueFit2D::RunMultiBinPseudoExptsSterileFit(bool Print) {
 
   TH2D * Error4Expts = new TH2D("Error4Expts", "", nBins, -0.5, nBins - 0.5, nBins, -0.5, nBins - 0.5);
 
-  ReadGridFiles();
+  ReadGridFilesSterileFit();
 
   if (nPts_Normal == 0 || nPts_Inverted == 0) {
     return;
@@ -5946,8 +5968,6 @@ void NueFit2D::RunMultiBinPseudoExptsSterileFit(bool Print) {
 
   gRandom->SetSeed(0);
 
-  int i, u;
-  unsigned int j, k;
   TH1D * nexp_bkgd = new TH1D("nexp_bkgd", "", nBins, -0.5, nBins - 0.5);
   TH1D * nexp_signal = new TH1D("nexp_signal", "", nBins, -0.5, nBins - 0.5);
   TH1D * nexp = new TH1D("nexp", "", nBins, -0.5, nBins - 0.5);
@@ -5957,13 +5977,13 @@ void NueFit2D::RunMultiBinPseudoExptsSterileFit(bool Print) {
   int noff;
 
   vector< vector<double> > nc, numucc, bnuecc, nutaucc, sig;
-  for (j = 0; j < nBins; j++) {
+  for (unsigned int j = 0; j < nBins; j++) {
     nc.push_back(vector<double>() );
     numucc.push_back(vector<double>() );
     bnuecc.push_back(vector<double>() );
     nutaucc.push_back(vector<double>() );
     sig.push_back(vector<double>() );
-    for (k = 0; k < Extrap.size(); k++) {
+    for (unsigned int k = 0; k < Extrap.size(); k++) {
       nc[j].push_back(0);
       numucc[j].push_back(0);
       bnuecc[j].push_back(0);
@@ -5990,19 +6010,19 @@ void NueFit2D::RunMultiBinPseudoExptsSterileFit(bool Print) {
     myfile.open(gSystem->ExpandPathName(file.c_str()));
   }
 
-  for (i = 0; i < nPts_Normal; i++) {
+  for (unsigned int i = 0; i < nPts_Normal; i++) {
     cout << "point " << (i + 1) << "/" << nPts_Normal << " (normal hierarchy)" << endl;
 
     nexp_bkgd->Reset();
     nexp_signal->Reset();
     nexp->Reset();
 
-    for (j = 0; j < nBins; j++) {
+    for (unsigned int j = 0; j < nBins; j++) {
       GridTree_Normal[j]->GetEntry(i);
       nexp_bkgd->SetBinContent(j + 1, grid_background * GridScale_Normal);
       nexp_signal->SetBinContent(j + 1, grid_signal * GridScale_Normal);
 
-      for (k = 0; k < Extrap.size(); k++) {
+      for (unsigned int k = 0; k < Extrap.size(); k++) {
         GridTree_2_Normal[j][k]->GetEntry(i);
         nc[j][k] = grid_nc * GridScale_Normal;
         numucc[j][k] = grid_numucc * GridScale_Normal;
@@ -6022,7 +6042,7 @@ void NueFit2D::RunMultiBinPseudoExptsSterileFit(bool Print) {
     Error4Expts->Add(ErrCalc->CovMatrix_Decomp);
     if (IncludeOscParErrs) {
       noff = 0;
-      for (j = 0; j < nBins; j++) {
+      for (unsigned int j = 0; j < nBins; j++) {
         ele = Error4Expts->GetBinContent(j + 1, j + 1);
         ele += (grid_bin_oscparerr[j] * grid_bin_oscparerr[j] * nexp->GetBinContent(j + 1) * nexp->GetBinContent(j + 1));
         Error4Expts->SetBinContent(j + 1, j + 1, ele);
@@ -6242,3 +6262,312 @@ void NueFit2D::RunMultiBinPseudoExptsSterileFit(bool Print) {
   return;
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Dung Code
+*/
+
+void NueFit2D::RunMultiBinPseudoExptsSterileFit(bool Print) {
+  if (FitMethod == 1 && (FracErr_Bkgd == 0 || FracErr_Sig == 0)) {
+    cout << "FracErr_Bkgd and FracErr_Sig need to be set for ScaledChi2.  Quitting..." << endl;
+    return;
+  }
+  if (Extrap.size() == 0) {
+    cout << "No Extrapolate2D input.  Quitting..." << endl;
+    return;
+  }
+  for (unsigned int ie = 0; ie < Extrap.size(); ie++) {
+    Extrap[ie]->GetPrediction();
+  }
+  if (ErrCalc == 0) {
+    cout << "Need to set ErrorCalc object!  Quitting..." << endl;
+    return;
+  }
+  if (FitMethod == 3) {
+    DefineStdDlnLMinuit();
+  }
+  if (FitMethod == 4) {
+    DefineBinDlnLMinuit();
+  }
+
+  nBins = Extrap[0]->Pred_TotalBkgd_VsBinNumber->GetNbinsX();
+  if (ErrorMatrix == 0) {
+    ErrorMatrix = new TH2D("ErrorMatrix", "", nBins, -0.5, nBins - 0.5, nBins, -0.5, nBins - 0.5);
+  }
+  if (InvErrorMatrix == 0) {
+    InvErrorMatrix = new TH2D("InvErrorMatrix", "", nBins, -0.5, nBins - 0.5, nBins, -0.5, nBins - 0.5);
+  }
+
+  TH2D * Error4Expts = new TH2D("Error4Expts", "", nBins, -0.5, nBins - 0.5, nBins, -0.5, nBins - 0.5);
+
+  ReadGridFilesSterileFit();
+
+  if (nPts_Normal == 0) {
+    return;
+  }
+
+  gRandom->SetSeed(0);
+
+  TH1D * nexp_bkgd = new TH1D("nexp_bkgd", "", nBins, -0.5, nBins - 0.5);
+  TH1D * nexp_signal = new TH1D("nexp_signal", "", nBins, -0.5, nBins - 0.5);
+  TH1D * nexp = new TH1D("nexp", "", nBins, -0.5, nBins - 0.5);
+  double delchi2, chi2min;
+  TH1D * chi2hist = new TH1D("chi2hist", "", 110000, -10, 100);
+  double ele;
+  int noff;
+
+  vector< vector<double> > nc, numucc, bnuecc, nutaucc, sig;
+  for (unsigned int j = 0; j < nBins; j++) {
+    nc.push_back(vector<double>() );
+    numucc.push_back(vector<double>() );
+    bnuecc.push_back(vector<double>() );
+    nutaucc.push_back(vector<double>() );
+    sig.push_back(vector<double>() );
+    for (unsigned int k = 0; k < Extrap.size(); k++) {
+      nc[j].push_back(0);
+      numucc[j].push_back(0);
+      bnuecc[j].push_back(0);
+      nutaucc[j].push_back(0);
+      sig[j].push_back(0);
+    }
+  }
+
+  Bkgd = (TH1D *) nexp->Clone("Bkgd");
+  Bkgd->Reset();
+  Sig = (TH1D *) nexp->Clone("Sig");
+  Sig->Reset();
+
+  ofstream myfile;
+  string file, ofile;
+
+  // normal hierarchy
+
+  TFile * f = new TFile(gSystem->ExpandPathName(outFileName.c_str()), "RECREATE");
+
+  if (Print) {
+    ofile = gSystem->ExpandPathName(outFileName.c_str());
+    file = ofile.substr(0, ofile.length() - 5) + "_Normal.dat";
+    myfile.open(gSystem->ExpandPathName(file.c_str()));
+  }
+
+  for (unsigned int i = 0; i < nPts_Normal; i++) {
+    cout << "point " << (i + 1) << "/" << nPts_Normal << " (normal hierarchy)" << endl;
+
+    nexp_bkgd->Reset();
+    nexp_signal->Reset();
+    nexp->Reset();
+
+    for (unsigned int j = 0; j < nBins; j++) {
+      GridTree_Normal[j]->GetEntry(i);
+      nexp_bkgd->SetBinContent(j + 1, grid_background * GridScale_Normal);
+      nexp_signal->SetBinContent(j + 1, grid_signal * GridScale_Normal);
+
+      for (unsigned int k = 0; k < Extrap.size(); k++) {
+        GridTree_2_Normal[j][k]->GetEntry(i);
+        nc[j][k] = grid_nc * GridScale_Normal;
+        numucc[j][k] = grid_numucc * GridScale_Normal;
+        bnuecc[j][k] = grid_bnuecc * GridScale_Normal;
+        nutaucc[j][k] = grid_nutaucc * GridScale_Normal;
+        sig[j][k] = grid_nue * GridScale_Normal;
+      }
+    }
+    nexp->Add(nexp_bkgd, nexp_signal, 1, 1);
+    ErrCalc->SetGridPred(nBins, nc, numucc, bnuecc, nutaucc, sig);
+
+    Error4Expts->Reset();
+    ErrCalc->SetUseGrid(true);
+    ErrCalc->CalculateSystErrorMatrix();
+    Error4Expts->Add(ErrCalc->CovMatrix);
+    ErrCalc->CalculateHOOError();
+    Error4Expts->Add(ErrCalc->CovMatrix_Decomp);
+    if (IncludeOscParErrs) {
+      noff = 0;
+      for (unsigned int j = 0; j < nBins; j++) {
+        ele = Error4Expts->GetBinContent(j + 1, j + 1);
+        ele += (grid_bin_oscparerr[j] * grid_bin_oscparerr[j] * nexp->GetBinContent(j + 1) * nexp->GetBinContent(j + 1));
+        Error4Expts->SetBinContent(j + 1, j + 1, ele);
+
+        for (unsigned int k = 0; k < nBins; k++) {
+          if (k > j) {
+            ele = Error4Expts->GetBinContent(j + 1, k + 1);
+            ele += (grid_bin_oscparerr[j] * grid_bin_oscparerr[k] * nexp->GetBinContent(j + 1) * nexp->GetBinContent(k + 1));
+            Error4Expts->SetBinContent(j + 1, k + 1, ele);
+
+            ele = Error4Expts->GetBinContent(k + 1, j + 1);
+            ele += (grid_bin_oscparerr[j] * grid_bin_oscparerr[k] * nexp->GetBinContent(j + 1) * nexp->GetBinContent(k + 1));
+            Error4Expts->SetBinContent(k + 1, j + 1, ele);
+
+            noff++;
+          }
+        }
+      }
+    }
+
+    chi2hist->Reset();
+    chi2hist->SetName(Form("Chi2Hist_Normal_%i", i));
+
+    for (unsigned int u = 0; u < NumExpts; u++) {
+      cout << "expt " << (u + 1) << "/" << NumExpts << endl;
+
+      GenerateOneCorrelatedExp(nexp, Error4Expts);
+      if (Print) {
+        myfile << grid_sinsqth14 << " " << grid_sinsqth24 << " ";
+        for (unsigned int j = 0; j < nBins; j++) {
+          myfile << NObs->GetBinContent(j + 1) << " ";
+        }
+        myfile << endl;
+      }
+
+      chi2min = GetMinLikelihood(grid_delta, true);// Now I'm getting confused here!
+
+      ErrCalc->SetUseGrid(true); // will use the grid predictions set above
+      delchi2 = 1e10;
+      if (FitMethod == 0) {
+        delchi2 = PoissonChi2(nexp) - chi2min;
+      } else if (FitMethod == 1) {
+        delchi2 = ScaledChi2(nexp_bkgd, nexp_signal) - chi2min;
+      } else if (FitMethod == 2) {
+        delchi2 = StandardChi2(nexp) - chi2min;
+      } else if (FitMethod == 3) {
+        // Likelihood: "Standard" (N syst, N nuisance)
+        // Calculate the likelihood (x2 for chi)
+        Bkgd->Reset();
+        Bkgd->Add(nexp_bkgd);
+        Sig->Reset();
+        Sig->Add(nexp_signal);
+        delchi2 = StandardLikelihood() - chi2min;
+      } else if (FitMethod == 4) {
+        // Likelihood: Bin by Bin Calculation of Systematics
+        // Calculate the likelihood (x2 for chi)
+        Bkgd->Reset();
+        Bkgd->Add(nexp_bkgd);
+        Sig->Reset();
+        Sig->Add(nexp_signal);
+        delchi2 = BinLikelihood() - chi2min;
+      } else {
+        cout << "Error in RunMultiBinPseudoExpts(): Unknown 'FitMethod'." << endl;
+      }
+      chi2hist->Fill(delchi2);
+
+    }
+    f->cd();
+    chi2hist->Write();
+    f->Close();
+
+    f = new TFile(gSystem->ExpandPathName(outFileName.c_str()), "UPDATE");
+  }
+
+  if (Print) {
+    myfile.close();
+  }
+
+  for (j = 0; j < nBins; j++) {
+    GridTree_Normal[j]->Write();
+
+    for (k = 0; k < Extrap.size(); k++) {
+      GridTree_2_Normal[j][k]->Write();
+    }
+  }
+
+  f->Close();
+
+  return;
+}
+
+
+void NueFit2D::ReadGridFilesSterileFit() {
+  double fp;
+  TTree * temp;
+
+  grid_bin_oscparerr.clear();
+  for (unsigned int i = 0; i < nBins; i++) {
+    grid_bin_oscparerr.push_back(0);
+  }
+
+  TFile * fnorm;
+  GridTree_Normal.clear();
+  GridTree_2_Normal.clear();
+  nPts_Normal = 0;
+  if (!gSystem->AccessPathName(gSystem->ExpandPathName(GridFileName_Normal.c_str()))) { // if file exists
+    fnorm = new TFile(gSystem->ExpandPathName(GridFileName_Normal.c_str()), "READ");
+    for (unsigned int i = 0; i < nBins; i++) {
+      temp = (TTree *) fnorm->Get(Form("Bin_%i", i));
+      temp->SetName(Form("Bin_%i_Normal", i));
+      temp->SetBranchAddress("Background", &grid_background);
+      temp->SetBranchAddress("Signal", &grid_signal);
+      temp->SetBranchAddress("SinSq2Th14", &grid_sinsqth14);
+      temp->SetBranchAddress("SinSq2Th24", &grid_sinsqth24);
+      temp->SetBranchAddress("Dmsq41", &grid_dmsq41);
+      if (IncludeOscParErrs) {
+        temp->SetBranchAddress("DNExp_DOscPars", &grid_bin_oscparerr[i]);
+      }
+      GridTree_Normal.push_back(temp);
+
+      GridTree_2_Normal.push_back(vector<TTree *>() );
+
+      for (unsigned int j = 0; j < Extrap.size(); j++) {
+        temp = (TTree *) fnorm->Get(Form("Bin_%i_Run_%i", i, j));
+        temp->SetName(Form("Bin_%i_Run_%i_Normal", i, j));
+        temp->SetBranchAddress("NC", &grid_nc);
+        temp->SetBranchAddress("NuMuCC", &grid_numucc);
+        temp->SetBranchAddress("BNueCC", &grid_bnuecc);
+        temp->SetBranchAddress("NuTauCC", &grid_nutaucc);
+        temp->SetBranchAddress("Signal", &grid_nue);
+        temp->SetBranchAddress("SinSq2Th14", &grid_sinsqth14);
+        temp->SetBranchAddress("SinSq2Th24", &grid_sinsqth24);
+        temp->SetBranchAddress("Dmsq41", &grid_dmsq41);
+        GridTree_2_Normal[i].push_back(temp);
+      }
+    }
+    nPts_Normal = GridTree_Normal[0]->GetEntries();
+
+    paramtree_Normal = (TTree *) fnorm->Get("paramtree");
+    paramtree_Normal->SetName("paramtree_Normal");
+    paramtree_Normal->SetBranchAddress("farPOT", &fp);
+    paramtree_Normal->SetBranchAddress("Theta12", &grid_n_th12);
+    paramtree_Normal->SetBranchAddress("Theta13", &grid_n_th13);
+    paramtree_Normal->SetBranchAddress("Theta23", &grid_n_th23);
+    paramtree_Normal->SetBranchAddress("DeltaMSq23", &grid_n_dm2_32);
+    paramtree_Normal->SetBranchAddress("DeltaMSq12", &grid_n_dm2_21);
+    paramtree_Normal->SetBranchAddress("DeltaMSq41", &grid_dmsq41);
+    paramtree_Normal->GetEntry(0);
+
+    if (GridNorm > 0) {
+      GridScale_Normal = GridNorm / fp;
+    }
+  } else {
+    cout << "Grid file (normal hierarchy) doesn't exist." << endl;
+    return;
+  }
+
+  return;
+}

@@ -30,7 +30,7 @@ class NueFit2D: public TObject {
   public:
     NueFit2D();
     virtual ~NueFit2D();
-    
+
     void RunScaledChi2Sensitivity();
     void RunStandardChi2Sensitivity();
     void RunFCAnalytical();
@@ -40,14 +40,14 @@ class NueFit2D: public TObject {
     virtual void RunMultiBinPseudoExpts(bool Print=true);
     void RunFCTraditional();
     void RunMultiBinFC();
-    virtual double GetSensitivityAt(double delta=0, bool normalhier=true);//returns sin^2 2th13 90% CL upper limit for given values of delta and the hierarchy 
+    virtual double GetSensitivityAt(double delta=0, bool normalhier=true);//returns sin^2 2th13 90% CL upper limit for given values of delta and the hierarchy
     virtual void RunDeltaChi2Contour(int cl=0);//0 = 90%, 1 = 68.4%
     virtual void RunSterileContour(int cl=0); // 0 = 90%, 1 = 68.4%
     virtual void Run2DSterileSlice();
 
     virtual double GetLikelihood(double t12=0.6,double t23=0.785398,double t13=0,double dm2_32=2.32e-3,double dm2_21=7.59e-5,double delta=0);//gets the likelihood value for NObs and prediction at these osc par values
     virtual void RunDataGrid(string filenorm,string fileinvt);
-    
+
     virtual void AddExtrap(Extrapolate2D* E);
     void SetNObs(TH1D *n);//x axis is 2D bin number, content is number of events in that bin
 
@@ -62,22 +62,22 @@ class NueFit2D: public TObject {
     void SetPseudoExperimentInputFile(string s="PseudoExp.root") { PseudoExpFile = s; };
     void SetGridFiles(string snorm="Grid_1stAna_Norm.root",string sinvt="Grid_1stAna_Invt.root");
     void SetGridNorm(double n=0) { GridNorm = n; };//in case you want a different normalization than the grid files were made with
-    
+
     void SetNDeltaSteps(int n=20) { nDeltaSteps = n; };
     void SetNSinSq2Th13Steps(int n=3000) { nSinSq2Th13Steps = n; };
     void SetNSinSq2Th14Steps(int n=3000) { nSinSq2Th14Steps = n; };
     void SetDeltaRange(double l=0, double h=2);//in units of pi
     void SetSinSq2Th13Range(double l=0.05, double h = 0.35);
     void SetSinSq2Th14Range(double l=0.001, double h = 0.301);
-     
+
     void SetNSinSqTh14Steps(int n=100) { nSinSqTh14Steps = n; };
     void SetNSinSqTh24Steps(int n=100) { nSinSqTh24Steps = n; };
     void SetSinSqTh14Range(double l=0.0, double h = 1.0 );
-    void SetSinSqTh24Range(double l=0.0, double h = 1.0 );    
+    void SetSinSqTh24Range(double l=0.0, double h = 1.0 );
 
     void SetNepsetauSteps(int n=3000) { nepsetauSteps = n; };
     void SetepsetauRange(double l=-4.0, double h=4.0);
-    
+
     void SetFitMethod(int m=0) { FitMethod = m; };//0 = poisson, 1 = scaled chi2, 2 = standard chi2, 3 = standard (nuisance param for each syst) likelihood, 4 = bin by bin likelihood
 
     void AddError(ErrorCalc *Err); //Set the errorcalc object.
@@ -85,17 +85,17 @@ class NueFit2D: public TObject {
 
     double StdLikeComparison(vector<double> npar);
     double BinLikeComparison(vector<double> npar);
-    
+
     virtual void RunMultiBinPseudoExpts_MHDeltaFit(bool Print=true);
     virtual void RunMultiBinFC_MHDeltaFit();
 
 
 
     //Delta Fit Additions
-    Double_t Theta12;  
+    Double_t Theta12;
     Double_t Theta12Unc;
     Double_t Theta23;
-    Double_t Theta23Unc; 
+    Double_t Theta23Unc;
     Double_t Theta13;
     Double_t Theta13Unc;
     Double_t DeltaMSq32;
@@ -109,8 +109,8 @@ class NueFit2D: public TObject {
     double Eps_etau;
     double Eps_etau_unc;
     double Eps_mumu;
-    double Eps_mutau; 
-    double Eps_tautau; 
+    double Eps_mutau;
+    double Eps_tautau;
     double Delta_emu;
     double Delta_etau;
     double Delta_etau_unc;
@@ -192,19 +192,19 @@ class NueFit2D: public TObject {
       Delta_etau = delta_etau;
       Delta_etau_unc = delta_etau_unc;
       return;
-    } 
+    }
 
-     
+
   protected:
-    
+
     double DoStdMinParam();
     double StandardLikelihood();
     virtual void DefineStdDlnLMinuit();
-    
+
     double DoBinMinParam();
     double BinLikelihood();
     virtual void DefineBinDlnLMinuit();
-    
+
     virtual void CalculateDlnLMatrix(TH2D *SystMatrix, TH2D *HOOHEMatrix);
 
     ErrorCalc *ErrCalc;
@@ -214,26 +214,26 @@ class NueFit2D: public TObject {
 
     virtual void ReadGridFiles();
     void SetupChi2Hists();
-    
+
     void GenerateOneExperiment(TH1D *nexp_bkgd,TH1D *nexp_signal,TH1D *dnexp_oscpar=0);
     void GenerateOneCorrelatedExp(TH1D *nexp,TH2D *err);//generates a pseudo-experiment including systematic correlations based on the error matrix
-    
+
     double ScaledChi2(TH1D *nexp_bkgd,TH1D *nexp_signal);
     double PoissonChi2(TH1D *nexp);
     double StandardChi2(TH1D *nexp);
     void CalculateErrorMatrixInv(TH1D *nexp);
-    
+
     virtual double GetMinLikelihood(double delta=0,bool normalhier=true);//used only within FC code - gets the best fit likelihood value for NObs; other parameters fixed at values in grid files and given delta
-    
+
     virtual double GetMinLikelihood_Delta(bool normalhier=true);//used only within FC code - gets the best fit likelihood value for NObs; other parameters fixed at values in grid files (including theta13).  Fit is along delta.
-    
+
     //Josh's functions for analytical FC
     double EvaluateOmega(double signal, double background);
     double CalculateRank(int n, double s, double b, double errBg, double k, double errK);
     bool FindBestFit(int n,  double s, double b, double errBg, double k, double errK, double* res);
-    
+
     string outFileName;
-    
+
     vector<Extrapolate2D*> Extrap;
     TH1D *NObs;
     TH1D *FracErr_Bkgd;
@@ -241,49 +241,50 @@ class NueFit2D: public TObject {
     TH1D *Bkgd;
     TH1D *Sig;
     TH1D *NExp;
-    
+
     TH2D *ErrorMatrix;
     TH2D *InvErrorMatrix;
     TH2D *ExternalErrorMatrix;
-    
+
     unsigned int nBins;
-    
+
     TH2D *Chi2_Normal;
     TH2D *Chi2_Inverted;
-    
+
     string GridFileName_Normal;
     string GridFileName_Inverted;
-    
+
     vector<TTree*> GridTree_Normal;
     vector<TTree*> GridTree_Inverted;
     vector< vector<TTree*> > GridTree_2_Normal;
     vector< vector<TTree*> > GridTree_2_Inverted;
     TTree *paramtree_Normal,*paramtree_Inverted;
-    
+
     double grid_background,grid_signal,grid_delta,grid_sinsq2th13,grid_oscparerr;
+    double grid_sinsqth14, grid_sinsqth24, grid_dmsq41;
     double grid_nc,grid_numucc,grid_bnuecc,grid_nutaucc,grid_nue;
     vector<double> grid_bin_oscparerr;
     double grid_n_th12,grid_n_th23,grid_n_dm2_32,grid_n_dm2_21,grid_n_th13;
     double grid_i_th12,grid_i_th23,grid_i_dm2_32,grid_i_dm2_21,grid_i_th13;
-    
+
     int nPts_Normal;
     int nPts_Inverted;
-    
+
     int NumExpts;
-    
+
     string PseudoExpFile;
-    
+
     double GridNorm;
     double GridScale_Normal;
     double GridScale_Inverted;
-    
+
     bool IncludeOscParErrs;
-    
+
     int nSinSq2Th13_Chi2Hist;
     int nDelta_Chi2Hist;
     double SinSq2Th13Low_Chi2Hist,SinSq2Th13High_Chi2Hist;
     double DeltaLow_Chi2Hist,DeltaHigh_Chi2Hist;
-    
+
     int nDeltaSteps;
     int nSinSq2Th13Steps;
     int nSinSq2Th14Steps;
@@ -291,7 +292,7 @@ class NueFit2D: public TObject {
     int nSinSqTh24Steps;
     double DeltaLow, DeltaHigh;
     double SinSq2Th13Low, SinSq2Th13High;
-    double SinSq2Th14Low, SinSq2Th14High;    
+    double SinSq2Th14Low, SinSq2Th14High;
     double SinSqTh14Low, SinSqTh14High;
     double SinSqTh24Low, SinSqTh24High;
 
@@ -303,9 +304,9 @@ class NueFit2D: public TObject {
     /** Dung Phan
     *** Sterile package
     **/
-    
 
-    
+
+
     ClassDef(NueFit2D,1)
 };
 
