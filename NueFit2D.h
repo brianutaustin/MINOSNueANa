@@ -260,7 +260,6 @@ class NueFit2D: public TObject {
     TTree *paramtree_Normal,*paramtree_Inverted;
 
     double grid_background,grid_signal,grid_delta,grid_sinsq2th13,grid_oscparerr;
-    double grid_sinsqth14, grid_sinsqth24, grid_dmsq41;
     double grid_nc,grid_numucc,grid_bnuecc,grid_nutaucc,grid_nue;
     vector<double> grid_bin_oscparerr;
     double grid_n_th12,grid_n_th23,grid_n_dm2_32,grid_n_dm2_21,grid_n_th13;
@@ -307,7 +306,10 @@ public:
     void ReadGridFilesSterileFit();
     void RunMultiBinPseudoExptsSterileFit(bool);
     void RunSterileFit(); // Obsolete (don't use except when you're Dung)
+    double GetMinLikelihoodSterileFit();
 
+protected:
+    double grid_sinsqth14, grid_sinsqth24, grid_dmsq41, grid_delta13, grid_delta14, grid_delta24, grid_th34;
 
     ClassDef(NueFit2D,1)
 };

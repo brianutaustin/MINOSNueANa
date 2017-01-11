@@ -5610,152 +5610,6 @@ void NueFit2D::Run2DSterileSlice() {
 } // 2D SterileSlice
 
 
-/** Dung Phan
- * [NueFit2D::RunSterileFit description]
- * Find the chisquare value at a single point in the sterile nue grid.
- */
-/*
-   double NueFit2D::RunSterileFit() {
-   if (NObs == 0) {
-   cout << "NObs not set.  Quitting..." << endl;
-   return 0;
-   }
-
-   if (FitMethod == 1 && (FracErr_Bkgd == 0 || FracErr_Sig == 0)) {
-    cout << "FracErr_Bkgd and FracErr_Sig need to be set for ScaledChi2.  Quitting..." << endl;
-    return 0;
-   }
-
-   if (Extrap.size() == 0) {
-    cout << "No Extrapolate2D input.  Quitting..." << endl;
-    return 0;
-   }
-
-   if (FitMethod == 4) {
-    DefineBinDlnLMinuit();
-   }
-
-   Bkgd = (TH1D *) NObs->Clone("Bkgd");
-   Bkgd->Reset();
-   Sig = (TH1D *) NObs->Clone("Sig");
-   Sig->Reset();
-   NExp = (TH1D *) NObs->Clone("NExp");
-   NExp->Reset();
-
-   for (unsigned int ie = 0; ie < Extrap.size(); ie++) {
-    Extrap[ie]->GetPrediction();
-   }
-
-   if (ErrorMatrix == 0) {
-    ErrorMatrix = new TH2D("ErrorMatrix", "", nBins, -0.5, nBins - 0.5, nBins, -0.5, nBins - 0.5);
-   }
-
-   if (InvErrorMatrix == 0) {
-    InvErrorMatrix = new TH2D("InvErrorMatrix", "", nBins, -0.5, nBins - 0.5, nBins, -0.5, nBins - 0.5);
-   }
-
-   double chi;
-
-   for (unsigned int ie = 0; ie < Extrap.size(); ie++) {
-    Extrap[ie]->SetSinSqTh14(SinSqTh14Low);
-    Extrap[ie]->SetSinSqTh24(SinSqTh24Low);
-    Extrap[ie]->OscillatePrediction();
-   }
-
-   Bkgd->Reset();
-   Sig->Reset();
-   NExp->Reset();
-
-   for (unsigned int ie = 0; ie < Extrap.size(); ie++) {
-    Bkgd->Add(Extrap[ie]->Pred_TotalBkgd_VsBinNumber);
-    Sig->Add(Extrap[ie]->Pred_Signal_VsBinNumber);
-   }
-   NExp->Add(Bkgd);
-   NExp->Add(Sig);
-
-   if (FitMethod == 4) {
-    // Likelihood: Bin by Bin Calculation of Systematics
-    // Calculate the likelihood (x2 for chi)
-    chi = BinLikelihood();
-   }
-
-   return chi;
-   }
- */
-
-/** Dung Phan
- * [NueFit2D::RunSterileFit description]
- * Find the chisquare value at a single point in the sterile nue grid.
- */
-/*
-   void NueFit2D::RunSterileFit() {
-   if (NObs == 0) {
-    cout << "NObs not set.  Quitting..." << endl;
-    return;
-   }
-
-   if (FitMethod == 1 && (FracErr_Bkgd == 0 || FracErr_Sig == 0)) {
-    cout << "FracErr_Bkgd and FracErr_Sig need to be set for ScaledChi2.  Quitting..." << endl;
-    return;
-   }
-
-   if (Extrap.size() == 0) {
-    cout << "No Extrapolate2D input.  Quitting..." << endl;
-    return;
-   }
-
-   if (FitMethod == 4) {
-    DefineBinDlnLMinuit();
-   }
-   Bkgd = (TH1D *) NObs->Clone("Bkgd");
-   Bkgd->Reset();
-   Sig = (TH1D *) NObs->Clone("Sig");
-   Sig->Reset();
-   NExp = (TH1D *) NObs->Clone("NExp");
-   NExp->Reset();
-
-   for (unsigned int ie = 0; ie < Extrap.size(); ie++) {
-    Extrap[ie]->GetPrediction();
-   }
-
-   if (ErrorMatrix == 0) {
-    ErrorMatrix = new TH2D("ErrorMatrix", "", nBins, -0.5, nBins - 0.5, nBins, -0.5, nBins - 0.5);
-   }
-
-   if (InvErrorMatrix == 0) {
-    InvErrorMatrix = new TH2D("InvErrorMatrix", "", nBins, -0.5, nBins - 0.5, nBins, -0.5, nBins - 0.5);
-   }
-
-   for (unsigned int ie = 0; ie < Extrap.size(); ie++) {
-    Extrap[ie]->SetSinSqTh14(SinSqTh14Low);
-    Extrap[ie]->SetSinSqTh24(SinSqTh24Low);
-    Extrap[ie]->OscillatePrediction();
-   }
-
-   unsigned int Nf = 1000;
-   double * chi = new double[Nf];
-   for (unsigned int nf = 0; nf < Nf; nf++) {
-    Bkgd->Reset();
-    Sig->Reset();
-    NExp->Reset();
-    for (unsigned int ie = 0; ie < Extrap.size(); ie++) {
-      Bkgd->Add(Extrap[ie]->Pred_TotalBkgd_VsBinNumber);
-      Sig->Add(Extrap[ie]->Pred_Signal_VsBinNumber);
-    }
-    NExp->Add(Bkgd);
-    NExp->Add(Sig);
-    if (FitMethod == 4) {
-      // Likelihood: Bin by Bin Calculation of Systematics
-      // Calculate the likelihood (x2 for chi)
-      chi[nf] = BinLikelihood();
-    }
-
-    cout << "chi[" << nf << "]: " << chi[nf] << endl;
-   }
-   return;
-   }
- */
-
 /* Dung Phan (NueSterileSearch)
  */
 
@@ -5997,16 +5851,23 @@ void NueFit2D::RunMultiBinPseudoExptsSterileFit(bool Print) {
 
     for (unsigned int j = 0; j < nBins; j++) {
       GridTree_Normal[j]->GetEntry(i);
-      nexp_bkgd->SetBinContent(j + 1, grid_background * GridScale_Normal);
-      nexp_signal->SetBinContent(j + 1, grid_signal * GridScale_Normal);
+      //nexp_bkgd->SetBinContent(j + 1, grid_background * GridScale_Normal);
+      //nexp_signal->SetBinContent(j + 1, grid_signal * GridScale_Normal);
+      nexp_bkgd->SetBinContent(j + 1, grid_background);
+      nexp_signal->SetBinContent(j + 1, grid_signal);
 
       for (unsigned int k = 0; k < Extrap.size(); k++) {
         GridTree_2_Normal[j][k]->GetEntry(i);
-        nc[j][k] = grid_nc * GridScale_Normal;
-        numucc[j][k] = grid_numucc * GridScale_Normal;
-        bnuecc[j][k] = grid_bnuecc * GridScale_Normal;
-        nutaucc[j][k] = grid_nutaucc * GridScale_Normal;
-        sig[j][k] = grid_nue * GridScale_Normal;
+        //nc[j][k] = grid_nc * GridScale_Normal;
+        //numucc[j][k] = grid_numucc * GridScale_Normal;
+        //bnuecc[j][k] = grid_bnuecc * GridScale_Normal;
+        //nutaucc[j][k] = grid_nutaucc * GridScale_Normal;
+        //sig[j][k] = grid_nue * GridScale_Normal;
+        nc[j][k] = grid_nc;
+        numucc[j][k] = grid_numucc;
+        bnuecc[j][k] = grid_bnuecc;
+        nutaucc[j][k] = grid_nutaucc;
+        sig[j][k] = grid_nue;
       }
     }
     nexp->Add(nexp_bkgd, nexp_signal, 1, 1);
@@ -6137,6 +5998,10 @@ void NueFit2D::ReadGridFilesSterileFit() {
       temp->SetBranchAddress("SinSq2Th14", &grid_sinsqth14);
       temp->SetBranchAddress("SinSq2Th24", &grid_sinsqth24);
       temp->SetBranchAddress("Dmsq41", &grid_dmsq41);
+      temp->SetBranchAddress("Delta13", &grid_delta13);
+      temp->SetBranchAddress("Delta14", &grid_delta14);
+      temp->SetBranchAddress("Delta24", &grid_delta24);
+      temp->SetBranchAddress("Theta34", &grid_th34);
       if (IncludeOscParErrs) {
         temp->SetBranchAddress("DNExp_DOscPars", &grid_bin_oscparerr[i]);
       }
@@ -6181,3 +6046,115 @@ void NueFit2D::ReadGridFilesSterileFit() {
 
   return;
 }
+
+/*
+double NueFit2D::GetMinLikelihoodSterileFit() {
+  if (NObs == 0) {
+    cout << "NObs not set.  Quitting..." << endl;
+    return 0;
+  }
+  if (FitMethod == 1 && (FracErr_Bkgd == 0 || FracErr_Sig == 0)) {
+    cout << "FracErr_Bkgd and FracErr_Sig need to be set for ScaledChi2.  Quitting..." << endl;
+    return 0;
+  }
+  if (Extrap.size() == 0) {
+    cout << "No Extrapolate2D input.  Quitting..." << endl;
+    return 0;
+  }
+
+  if (FitMethod == 3) {
+    DefineStdDlnLMinuit();
+  }
+  if (FitMethod == 4) {
+    DefineBinDlnLMinuit();
+  }
+  if (FitMethod == 3 || FitMethod == 4) {
+    if (ErrCalc != 0) {
+      ErrCalc->SetUseGrid(false);
+    }
+  }
+
+  Bkgd = (TH1D *) NObs->Clone("Bkgd");
+  Bkgd->Reset();
+  Sig = (TH1D *) NObs->Clone("Sig");
+  Sig->Reset();
+  TH1D * NExp = (TH1D *) NObs->Clone("NExp");
+  NExp->Reset();
+
+  for (unsigned int ie = 0; ie < Extrap.size(); ie++) {
+    Extrap[ie]->GetPrediction();
+    Extrap[ie]->SetOscPar(OscPar::kTh12, Theta12);
+    Extrap[ie]->SetOscPar(OscPar::kTh13, Theta13);
+    Extrap[ie]->SetOscPar(OscPar::kTh23, Theta23);
+    Extrap[ie]->SetOscPar(OscPar::kTh34, 0);
+    Extrap[ie]->SetOscPar(OscPar::kDeltaM12, DeltaMSq12);
+    Extrap[ie]->SetOscPar(OscPar::kDeltaM23, DeltaMSq23);
+    Extrap[ie]->SetOscPar(OscPar::kDm41, dmsq41);
+    Extrap[ie]->SetOscPar(OscPar::kDelta, 0);
+    Extrap[ie]->SetOscPar(OscPar::kDelta14, 0);
+    Extrap[ie]->SetOscPar(OscPar::kDelta24, 0);
+    Extrap[ie]->OscillatePrediction();
+  }
+
+  Int_t i;
+
+  if (ErrorMatrix == 0) {
+    ErrorMatrix = new TH2D("ErrorMatrix", "", nBins, -0.5, nBins - 0.5, nBins, -0.5, nBins - 0.5);
+  }
+  if (InvErrorMatrix == 0) {
+    InvErrorMatrix = new TH2D("InvErrorMatrix", "", nBins, -0.5, nBins - 0.5, nBins, -0.5, nBins - 0.5);
+  }
+
+  Double_t ss2th13 = 0;
+  TF1 * fit;
+  double minchi2;
+
+  const int ns = 30;
+  double max = 0.6;
+  double width = max / ns;
+  double th13[ns], c2[ns];
+  for (i = 0; i < ns; i++) {
+    ss2th13 = i * width;
+    th13[i] = ss2th13;
+    for (ie = 0; ie < Extrap.size(); ie++) {
+      Extrap[ie]->SetSinSq2Th13(ss2th13);
+      Extrap[ie]->OscillatePrediction();
+    }
+    Bkgd->Reset();
+    Sig->Reset();
+    NExp->Reset();
+    for (ie = 0; ie < Extrap.size(); ie++) {
+      Bkgd->Add(Extrap[ie]->Pred_TotalBkgd_VsBinNumber);
+      Sig->Add(Extrap[ie]->Pred_Signal_VsBinNumber);
+    }
+    NExp->Add(Bkgd);
+    NExp->Add(Sig);
+
+    c2[i] = 1e10;
+    if (FitMethod == 0) {
+      c2[i] = PoissonChi2(NExp);
+    } else if (FitMethod == 1) {
+      c2[i] = ScaledChi2(Bkgd, Sig);
+    } else if (FitMethod == 2) {
+      c2[i] = StandardChi2(NExp);
+    } else if (FitMethod == 3) {
+      // Likelihood: "Standard" (N syst, N nuisance)
+      // Calculate the likelihood (x2 for chi)
+      c2[i] = StandardLikelihood();
+    } else if (FitMethod == 4) {
+      // Likelihood: Bin by Bin Calculation of Systematics
+      // Calculate the likelihood (x2 for chi)
+      c2[i] = BinLikelihood();
+    } else {
+      cout << "Error in GetMinLikelihoodSterileFit(): Unknown 'FitMethod'." << endl;
+    }
+  }
+
+  TGraph * g = new TGraph(ns, th13, c2);
+  fit = new TF1("pol6", "pol6");
+  g->Fit(fit, "Q"); // fit to second order polynominal
+  minchi2 = fit->GetMinimum(0, max);
+
+  return minchi2;
+}
+*/

@@ -6,24 +6,24 @@
 GridGen::GridGen()
 {
   SetOutputFile();
-  
+
   SetNDeltaSteps();
   SetNSinSq2Th13Steps();
   SetDeltaRange();
   SetSinSq2Th13Range();
   SetNormalHierarchy();
-  
+
   SetTheta12();
   SetTheta23();
   SetAbsValDeltaMSq23();
   SetDeltaMSq12();
-  
+
   SetTheta13();
-  
+
   SetNExperiments();
-  
+
   FreezeTheta23(false);
-  
+
   return;
 }
 GridGen::~GridGen()
@@ -33,7 +33,7 @@ void GridGen::SetDeltaRange(double l,double h)
 {
   DeltaLow = l;
   DeltaHigh = h;
-  
+
   return;
 }
 void GridGen::SetSinSq2Th13Range(double l,double h)
@@ -48,10 +48,10 @@ void GridGen::SetSinSq2Th13Range(double l,double h)
     cout<<"Unphysical value of SinSq2Th13.  Setting high value to 1."<<endl;
     h=1;
   }
-  
+
   SinSq2Th13Low = l;
   SinSq2Th13High = h;
-  
+
   return;
 }
 void GridGen::SetTheta12(double val, double errup, double errdn)
@@ -110,7 +110,7 @@ Double_t GridGen::AsymGaus(Double_t sm, Double_t sp)
 double GridGen::DrawTheta23(double dtheta)
 {
   if (FrozenTheta23) {
-    return Theta23; 
+    return Theta23;
   }
   else {
     Double_t sstt = 1-TMath::Abs(gRandom->Gaus(0,dtheta));
@@ -125,7 +125,7 @@ double GridGen::DrawTheta23(double dtheta)
       tt   = -TMath::Pi()/2+(gRandom->Uniform()>0.5?-1:1)*(-TMath::Pi()/2-TMath::ASin(stt));
     }
     double theta23new = tt/2;
-    
+
     return theta23new;
   }
 }
@@ -136,13 +136,13 @@ void GridGen::Run()
     cout<<"No Extrapolate2D input.  Quitting..."<<endl;
     return;
   }
-  
+
   unsigned int ie;
   for(ie=0;ie<Extrap.size();ie++)
   {
     Extrap[ie]->GetPrediction();//this initializes everything (note: if creating Extrapolate2D object from a file, the number of bins, etc. doesn't get set until GetPrediction() is called)
   }
-  
+
   for(ie=0;ie<Extrap.size();ie++)
   {
     Extrap[ie]->SetOscPar(OscPar::kTh12,Theta12);
@@ -152,14 +152,14 @@ void GridGen::Run()
     if(!NormalHier) Extrap[ie]->InvertMassHierarchy();
     Extrap[ie]->OscillatePrediction();
   }
-  
+
   int i;
   unsigned int j;
   int nbins=Extrap[0]->Pred_TotalBkgd_VsBinNumber->GetNbinsX();
   double delta,ssq2th13;
   double sig, bkgd;
   double nc,numucc,bnue,tau,nue;
-  
+
   vector<TTree*> ftree;
   vector< vector<TTree*> > ftree2;
   TTree *ttmp;
@@ -170,13 +170,13 @@ void GridGen::Run()
     ttmp->Branch("Th13Axis",&ssq2th13,"Th13Axis/D");
     ttmp->Branch("Signal",&sig,"Signal/D");
     ttmp->Branch("Background",&bkgd,"Background/D");
-    
+
     ftree.push_back(ttmp);
-    
+
     ttmp->Reset();
-    
+
     ftree2.push_back( vector<TTree*>() );
-    
+
     for(j=0;j<Extrap.size();j++)
     {
       ttmp = new TTree(Form("Bin_%i_Run_%i",i,j),Form("Bin_%i_Run_%i",i,j));
@@ -187,27 +187,27 @@ void GridGen::Run()
       ttmp->Branch("NuMuCC",&numucc,"NuMuCC/D");
       ttmp->Branch("BNueCC",&bnue,"BNueCC/D");
       ttmp->Branch("NuTauCC",&tau,"NuTauCC/D");
-      
+
       ftree2[i].push_back(ttmp);
-      
+
       ttmp->Reset();
     }
   }
-  
+
   double delta_increment = 0;
   if(nDeltaSteps>0) delta_increment = (DeltaHigh - DeltaLow)/(nDeltaSteps);
   double ssq2th13_increment = 0;
   if(nSinSq2Th13Steps>0) ssq2th13_increment = (SinSq2Th13High - SinSq2Th13Low)/(nSinSq2Th13Steps);
-  
+
   int id,is,l;
   int ir,ip;
   int nPID = Extrap[0]->GetNPID();
-  
+
   l=0;
   for(id=0;id<nDeltaSteps+1;id++)
   {
     delta = (id*delta_increment + DeltaLow)*TMath::Pi();
-    
+
     for(is=0;is<nSinSq2Th13Steps+1;is++)
     {
       ssq2th13 = (is*ssq2th13_increment + SinSq2Th13Low);
@@ -217,7 +217,7 @@ void GridGen::Run()
         Extrap[ie]->SetSinSq2Th13(ssq2th13);
         Extrap[ie]->OscillatePrediction();
       }
-      
+
       for(i=0;i<nbins;i++)
       {
 	sig=0;
@@ -228,26 +228,26 @@ void GridGen::Run()
 	{
 	  sig += Extrap[ie]->Pred_Signal_VsBinNumber->GetBinContent(i+1);
 	  bkgd += Extrap[ie]->Pred_TotalBkgd_VsBinNumber->GetBinContent(i+1);
-          
+
           nc = Extrap[ie]->Pred[Background::kNC]->GetBinContent(ip+1,ir+1);
           numucc = Extrap[ie]->Pred[Background::kNuMuCC]->GetBinContent(ip+1,ir+1);
           bnue = Extrap[ie]->Pred[Background::kBNueCC]->GetBinContent(ip+1,ir+1);
           tau = Extrap[ie]->Pred[Background::kNuTauCC]->GetBinContent(ip+1,ir+1);
           nue = Extrap[ie]->Pred[Background::kNueCC]->GetBinContent(ip+1,ir+1);
-          
+
           ftree2[i][ie]->Fill();
 	}
 	ftree[i]->Fill();
       }
-      
+
       if(l%100==0) cout<<100.*l/((nDeltaSteps+1)*(nSinSq2Th13Steps+1))<<"% complete"<<endl;
       l++;
     }
   }
-  
+
   double nPOTNear,nPOTFar;
   double dm23;
-  
+
   TTree *paramtree = new TTree("paramtree","paramtree");
   paramtree->Branch("nearPOT",&nPOTNear,"nearPOT/D");
   paramtree->Branch("farPOT",&nPOTFar,"farPOT/D");
@@ -255,17 +255,17 @@ void GridGen::Run()
   paramtree->Branch("Theta23",&Theta23,"Theta23/D");
   paramtree->Branch("DeltaMSq23",&dm23,"DeltaMSq23/D");
   paramtree->Branch("DeltaMSq12",&DeltaMSq12,"DeltaMSq12/D");
-  
+
   dm23 = DeltaMSq23;
   if(!NormalHier) dm23 = -1.*DeltaMSq23;
-  
+
   for(ie=0;ie<Extrap.size();ie++)
   {
     nPOTNear = Extrap[ie]->GetNearPOT();
     nPOTFar = Extrap[ie]->GetFarPOT();
     paramtree->Fill();
   }
-  
+
   TFile *fout = new TFile(gSystem->ExpandPathName(outFileName.c_str()),"RECREATE");
   for(i=0;i<nbins;i++)
   {
@@ -277,7 +277,7 @@ void GridGen::Run()
   }
   paramtree->Write();
   fout->Close();
-  
+
   return;
 }
 void GridGen::RunWithOscParErrs(string s)
@@ -287,20 +287,20 @@ void GridGen::RunWithOscParErrs(string s)
     cout<<"No Extrapolate2D input.  Quitting..."<<endl;
     return;
   }
-  
+
   unsigned int ie;
   for(ie=0;ie<Extrap.size();ie++)
   {
 //     Extrap[ie]->SetPrintResult();
     Extrap[ie]->GetPrediction();
   }
-  
+
   if(Extrap[0]->Pred_TotalBkgd_VsBinNumber->GetNbinsX()!=1)
   {
     cout<<"RunWithOscParErrs() only works for 1 bin right now.  Quitting..."<<endl;
     return;
   }
-  
+
   for(ie=0;ie<Extrap.size();ie++)
   {
     Extrap[ie]->SetOscPar(OscPar::kTh12,Theta12);
@@ -310,43 +310,43 @@ void GridGen::RunWithOscParErrs(string s)
     if(!NormalHier) Extrap[ie]->InvertMassHierarchy();
     Extrap[ie]->OscillatePrediction();
   }
-  
+
   double delta,t13axis;
   double sig, bkgd;
   double oscparerr;
-  
+
   TTree *ftree = new TTree("Bin_0","Bin_0");
   ftree->Branch("Delta",&delta,"Delta/D");
   ftree->Branch("Th13Axis",&t13axis,"Th13Axis/D");
   ftree->Branch("Signal",&sig,"Signal/D");
   ftree->Branch("Background",&bkgd,"Background/D");
   ftree->Branch("DNExp_DOscPars",&oscparerr,"DNExp_DOscPars/D");
-  
+
   double delta_increment = 0;
   if(nDeltaSteps>0) delta_increment = (DeltaHigh - DeltaLow)/(nDeltaSteps);
   double ssq2th13_increment = 0;
   if(nSinSq2Th13Steps>0) ssq2th13_increment = (SinSq2Th13High - SinSq2Th13Low)/(nSinSq2Th13Steps);
-  
+
   int id,is,l,u;
   double theta23,theta12,dm21,dm32,ssq2th13;
   double nexp,nobs;
   double delnexp;
   TH1D *delnexphist = new TH1D("delnexphist","",400,-1,1);
-  
+
   gRandom->SetSeed(0);
-  
+
   TFile *f = new TFile(gSystem->ExpandPathName(s.c_str()),"RECREATE");//save the osc par err distributions to this file
-  
+
   l=0;
   for(id=0;id<nDeltaSteps+1;id++)
   {
     delta = (id*delta_increment + DeltaLow)*TMath::Pi();
-    
+
     for(is=0;is<nSinSq2Th13Steps+1;is++)
     {
       t13axis = (is*ssq2th13_increment + SinSq2Th13Low);
       ssq2th13 = t13axis/(2.*TMath::Sin(Theta23)*TMath::Sin(Theta23));
-      
+
       //get nominal prediction
       sig=0;
       bkgd=0;
@@ -364,7 +364,7 @@ void GridGen::RunWithOscParErrs(string s)
         sig += (Extrap[ie]->Pred_Signal_VsBinNumber->GetBinContent(1));
       }
       nexp = sig+bkgd;
-      
+
       //do pseudo experiments
       delnexphist->Reset();
       delnexphist->SetName(Form("DeltaNexp_%i_%i",id,is));
@@ -379,9 +379,9 @@ void GridGen::RunWithOscParErrs(string s)
         dm32 = DeltaMSq23 + AsymGaus(dDeltaMSq23_dn,dDeltaMSq23_up);
         //theta23 = DrawTheta23(dTheta23_up);
         theta23 = Theta23 + AsymGaus(dTheta23_dn,dTheta23_up);
-        
+
         ssq2th13 = t13axis/(2.*TMath::Sin(theta23)*TMath::Sin(theta23));
-        
+
         nobs=0;
         for(ie=0;ie<Extrap.size();ie++)
         {
@@ -401,21 +401,21 @@ void GridGen::RunWithOscParErrs(string s)
       oscparerr = delnexphist->GetRMS();
       delnexphist->Write();
       f->Close();
-      
+
       gROOT->cd("/");
       ftree->Fill();
-      
+
       f = new TFile(gSystem->ExpandPathName(s.c_str()),"UPDATE");
-      
+
       if(l%100==0) cout<<100.*l/((nDeltaSteps+1)*(nSinSq2Th13Steps+1))<<"% complete"<<endl;
       l++;
     }
   }
-  
+
   f->Close();
-  
+
   double nPOTNear,nPOTFar;
-  
+
   TTree *paramtree = new TTree("paramtree","paramtree");
   paramtree->Branch("nearPOT",&nPOTNear,"nearPOT/D");
   paramtree->Branch("farPOT",&nPOTFar,"farPOT/D");
@@ -423,22 +423,22 @@ void GridGen::RunWithOscParErrs(string s)
   paramtree->Branch("Theta23",&Theta23,"Theta23/D");
   paramtree->Branch("DeltaMSq23",&dm32,"DeltaMSq23/D");
   paramtree->Branch("DeltaMSq12",&DeltaMSq12,"DeltaMSq12/D");
-  
+
   dm32 = DeltaMSq23;
   if(!NormalHier) dm32 = -1.*DeltaMSq23;
-  
+
   for(ie=0;ie<Extrap.size();ie++)
   {
     nPOTNear = Extrap[ie]->GetNearPOT();
     nPOTFar = Extrap[ie]->GetFarPOT();
     paramtree->Fill();
   }
-  
+
   TFile *fout = new TFile(gSystem->ExpandPathName(outFileName.c_str()),"RECREATE");
   ftree->Write();
   paramtree->Write();
   fout->Close();
-  
+
   return;
 }
 void GridGen::RunMultiBinOscParErrs(string s)
@@ -448,13 +448,13 @@ void GridGen::RunMultiBinOscParErrs(string s)
     cout<<"No Extrapolate2D input.  Quitting..."<<endl;
     return;
   }
-  
+
   unsigned int ie;
   for(ie=0;ie<Extrap.size();ie++)
   {
     Extrap[ie]->GetPrediction();
   }
-  
+
   for(ie=0;ie<Extrap.size();ie++)
   {
     Extrap[ie]->SetOscPar(OscPar::kTh12,Theta12);
@@ -464,7 +464,7 @@ void GridGen::RunMultiBinOscParErrs(string s)
     if(!NormalHier) Extrap[ie]->InvertMassHierarchy();
     Extrap[ie]->OscillatePrediction();
   }
-  
+
   int i,k;
   unsigned int j;
   int nbins=Extrap[0]->Pred_TotalBkgd_VsBinNumber->GetNbinsX();
@@ -475,7 +475,7 @@ void GridGen::RunMultiBinOscParErrs(string s)
   vector<double> oscparerr;
   vector<double> oscparerr_offdiag;
   int noff;
-  
+
   for(i=0;i<nbins;i++)
   {
     sig.push_back(0);
@@ -502,7 +502,7 @@ void GridGen::RunMultiBinOscParErrs(string s)
       nue[i].push_back(0);
     }
   }
-  
+
   vector<TTree*> ftree;
   vector< vector<TTree*> > ftree2;
   TTree *ttmp;
@@ -524,11 +524,11 @@ void GridGen::RunMultiBinOscParErrs(string s)
       }
     }
     ftree.push_back(ttmp);
-    
+
     ttmp->Reset();
-    
+
     ftree2.push_back( vector<TTree*>() );
-    
+
     for(j=0;j<Extrap.size();j++)
     {
       ttmp = new TTree(Form("Bin_%i_Run_%i",i,j),Form("Bin_%i_Run_%i",i,j));
@@ -539,18 +539,18 @@ void GridGen::RunMultiBinOscParErrs(string s)
       ttmp->Branch("NuMuCC",&numucc[i][j],"NuMuCC/D");
       ttmp->Branch("BNueCC",&bnue[i][j],"BNueCC/D");
       ttmp->Branch("NuTauCC",&tau[i][j],"NuTauCC/D");
-      
+
       ftree2[i].push_back(ttmp);
-      
+
       ttmp->Reset();
     }
   }
-  
+
   double delta_increment = 0;
   if(nDeltaSteps>0) delta_increment = (DeltaHigh - DeltaLow)/(nDeltaSteps);
   double ssq2th13_increment = 0;
   if(nSinSq2Th13Steps>0) ssq2th13_increment = (SinSq2Th13High - SinSq2Th13Low)/(nSinSq2Th13Steps);
-  
+
   int id,is,l,u;
   int ip,ir;
   double theta23,theta12,dm21,dm32,ssq2th13;
@@ -570,21 +570,21 @@ void GridGen::RunMultiBinOscParErrs(string s)
       }
     }
   }
-  
+
   gRandom->SetSeed(0);
-  
+
   TFile *f = new TFile(gSystem->ExpandPathName(s.c_str()),"RECREATE");//save the osc par err distributions to this file
-  
+
   l=0;
   for(id=0;id<nDeltaSteps+1;id++)
   {
     delta = (id*delta_increment + DeltaLow)*TMath::Pi();
-    
+
     for(is=0;is<nSinSq2Th13Steps+1;is++)
     {
       t13axis = (is*ssq2th13_increment + SinSq2Th13Low);
       ssq2th13 = t13axis/(2.*TMath::Sin(Theta23)*TMath::Sin(Theta23));
-      
+
       //get nominal prediction
       for(ie=0;ie<Extrap.size();ie++)
       {
@@ -597,7 +597,7 @@ void GridGen::RunMultiBinOscParErrs(string s)
         Extrap[ie]->SetSinSq2Th13(ssq2th13);
         Extrap[ie]->OscillatePrediction();
       }
-      
+
       for(i=0;i<nbins;i++)
       {
         sig[i]=0;
@@ -608,7 +608,7 @@ void GridGen::RunMultiBinOscParErrs(string s)
         {
           bkgd[i] += (Extrap[ie]->Pred_TotalBkgd_VsBinNumber->GetBinContent(i+1));
           sig[i] += (Extrap[ie]->Pred_Signal_VsBinNumber->GetBinContent(i+1));
-	  
+
 	  nc[i][ie] = Extrap[ie]->Pred[Background::kNC]->GetBinContent(ip+1,ir+1);
           numucc[i][ie] = Extrap[ie]->Pred[Background::kNuMuCC]->GetBinContent(ip+1,ir+1);
           bnue[i][ie] = Extrap[ie]->Pred[Background::kBNueCC]->GetBinContent(ip+1,ir+1);
@@ -617,7 +617,7 @@ void GridGen::RunMultiBinOscParErrs(string s)
         }
         nexp[i] = sig[i]+bkgd[i];
       }
-      
+
       //do pseudo experiments
       noff=0;
       for(i=0;i<nbins;i++)
@@ -641,7 +641,7 @@ void GridGen::RunMultiBinOscParErrs(string s)
         dm32 = DeltaMSq23 + AsymGaus(dDeltaMSq23_dn,dDeltaMSq23_up);
         //theta23 = DrawTheta23(dTheta23_up);
         theta23 = Theta23 + AsymGaus(dTheta23_dn,dTheta23_up);
-        
+
         ssq2th13 = t13axis/(2.*TMath::Sin(theta23)*TMath::Sin(theta23));
 
 	for(ie=0;ie<Extrap.size();ie++)
@@ -654,7 +654,7 @@ void GridGen::RunMultiBinOscParErrs(string s)
           Extrap[ie]->SetSinSq2Th13(ssq2th13);
           Extrap[ie]->OscillatePrediction();
         }
-	
+
 	noff=0;
 	for(i=0;i<nbins;i++)
 	{
@@ -678,7 +678,7 @@ void GridGen::RunMultiBinOscParErrs(string s)
 	  }
 	}
       }
-      
+
       noff=0;
       for(i=0;i<nbins;i++)
       {
@@ -696,9 +696,9 @@ void GridGen::RunMultiBinOscParErrs(string s)
 	}
       }
       f->Close();
-      
+
       gROOT->cd("/");
-      
+
       for(i=0;i<nbins;i++)
       {
 	for(ie=0;ie<Extrap.size();ie++)
@@ -707,18 +707,18 @@ void GridGen::RunMultiBinOscParErrs(string s)
 	}
         ftree[i]->Fill();
       }
-      
+
       f = new TFile(gSystem->ExpandPathName(s.c_str()),"UPDATE");
-      
+
       if(l%100==0) cout<<100.*l/((nDeltaSteps+1)*(nSinSq2Th13Steps+1))<<"% complete"<<endl;
       l++;
     }
   }
-  
+
   f->Close();
-  
+
   double nPOTNear,nPOTFar;
-  
+
   TTree *paramtree = new TTree("paramtree","paramtree");
   paramtree->Branch("nearPOT",&nPOTNear,"nearPOT/D");
   paramtree->Branch("farPOT",&nPOTFar,"farPOT/D");
@@ -726,17 +726,17 @@ void GridGen::RunMultiBinOscParErrs(string s)
   paramtree->Branch("Theta23",&Theta23,"Theta23/D");
   paramtree->Branch("DeltaMSq23",&dm32,"DeltaMSq23/D");
   paramtree->Branch("DeltaMSq12",&DeltaMSq12,"DeltaMSq12/D");
-  
+
   dm32 = DeltaMSq23;
   if(!NormalHier) dm32 = -1.*DeltaMSq23;
-  
+
   for(ie=0;ie<Extrap.size();ie++)
   {
     nPOTNear = Extrap[ie]->GetNearPOT();
     nPOTFar = Extrap[ie]->GetFarPOT();
     paramtree->Fill();
   }
-  
+
   TFile *fout = new TFile(gSystem->ExpandPathName(outFileName.c_str()),"RECREATE");
   for(i=0;i<nbins;i++)
   {
@@ -748,7 +748,7 @@ void GridGen::RunMultiBinOscParErrs(string s)
   }
   paramtree->Write();
   fout->Close();
-  
+
   return;
 }
 void GridGen::RunMultiBin_VaryTheta13(string s)
@@ -758,13 +758,13 @@ void GridGen::RunMultiBin_VaryTheta13(string s)
     cout<<"No Extrapolate2D input.  Quitting..."<<endl;
     return;
   }
-  
+
   unsigned int ie;
   for(ie=0;ie<Extrap.size();ie++)
   {
     Extrap[ie]->GetPrediction();
   }
-  
+
   for(ie=0;ie<Extrap.size();ie++)
   {
     Extrap[ie]->SetOscPar(OscPar::kTh13,Theta13);
@@ -775,7 +775,7 @@ void GridGen::RunMultiBin_VaryTheta13(string s)
     if(!NormalHier) Extrap[ie]->InvertMassHierarchy();
     Extrap[ie]->OscillatePrediction();
   }
-  
+
   int i,k;
   unsigned int j;
   int nbins=Extrap[0]->Pred_TotalBkgd_VsBinNumber->GetNbinsX();
@@ -786,9 +786,9 @@ void GridGen::RunMultiBin_VaryTheta13(string s)
   vector<double> oscparerr;
   vector<double> oscparerr_offdiag;
   int noff;
-  
+
   t13axis = TMath::Sin(2*Theta13)*TMath::Sin(2*Theta13);
-  
+
   for(i=0;i<nbins;i++)
   {
     sig.push_back(0);
@@ -815,7 +815,7 @@ void GridGen::RunMultiBin_VaryTheta13(string s)
       nue[i].push_back(0);
     }
   }
-  
+
   vector<TTree*> ftree;
   vector< vector<TTree*> > ftree2;
   TTree *ttmp;
@@ -837,11 +837,11 @@ void GridGen::RunMultiBin_VaryTheta13(string s)
       }
     }
     ftree.push_back(ttmp);
-    
+
     ttmp->Reset();
-    
+
     ftree2.push_back( vector<TTree*>() );
-    
+
     for(j=0;j<Extrap.size();j++)
     {
       ttmp = new TTree(Form("Bin_%i_Run_%i",i,j),Form("Bin_%i_Run_%i",i,j));
@@ -852,16 +852,16 @@ void GridGen::RunMultiBin_VaryTheta13(string s)
       ttmp->Branch("NuMuCC",&numucc[i][j],"NuMuCC/D");
       ttmp->Branch("BNueCC",&bnue[i][j],"BNueCC/D");
       ttmp->Branch("NuTauCC",&tau[i][j],"NuTauCC/D");
-      
+
       ftree2[i].push_back(ttmp);
-      
+
       ttmp->Reset();
     }
   }
-  
+
   double delta_increment = 0;
   if(nDeltaSteps>0) delta_increment = (DeltaHigh - DeltaLow)/(nDeltaSteps);
-  
+
   int id,l,u;
   int ip,ir;
   double theta23,theta12,dm21,dm32,theta13;
@@ -881,16 +881,16 @@ void GridGen::RunMultiBin_VaryTheta13(string s)
       }
     }
   }
-  
+
   gRandom->SetSeed(0);
-  
+
   TFile *f = new TFile(gSystem->ExpandPathName(s.c_str()),"RECREATE");//save the osc par err distributions to this file
-  
+
   l=0;
   for(id=0;id<nDeltaSteps+1;id++)
   {
     delta = (id*delta_increment + DeltaLow)*TMath::Pi();
-    
+
     //get nominal prediction
     for(ie=0;ie<Extrap.size();ie++)
     {
@@ -903,7 +903,7 @@ void GridGen::RunMultiBin_VaryTheta13(string s)
       Extrap[ie]->SetDeltaCP(delta);
       Extrap[ie]->OscillatePrediction();
     }
-    
+
     for(i=0;i<nbins;i++)
     {
       sig[i]=0;
@@ -914,7 +914,7 @@ void GridGen::RunMultiBin_VaryTheta13(string s)
       {
         bkgd[i] += (Extrap[ie]->Pred_TotalBkgd_VsBinNumber->GetBinContent(i+1));
         sig[i] += (Extrap[ie]->Pred_Signal_VsBinNumber->GetBinContent(i+1));
-        
+
         nc[i][ie] = Extrap[ie]->Pred[Background::kNC]->GetBinContent(ip+1,ir+1);
         numucc[i][ie] = Extrap[ie]->Pred[Background::kNuMuCC]->GetBinContent(ip+1,ir+1);
         bnue[i][ie] = Extrap[ie]->Pred[Background::kBNueCC]->GetBinContent(ip+1,ir+1);
@@ -923,7 +923,7 @@ void GridGen::RunMultiBin_VaryTheta13(string s)
       }
       nexp[i] = sig[i]+bkgd[i];
     }
-    
+
     //do pseudo experiments
     noff=0;
     for(i=0;i<nbins;i++)
@@ -947,7 +947,7 @@ void GridGen::RunMultiBin_VaryTheta13(string s)
       dm21 = DeltaMSq12 + AsymGaus(dDeltaMSq12_dn,dDeltaMSq12_up);
       dm32 = DeltaMSq23 + AsymGaus(dDeltaMSq23_dn,dDeltaMSq23_up);
       theta23 = Theta23 + AsymGaus(dTheta23_dn,dTheta23_up);
-      
+
       for(ie=0;ie<Extrap.size();ie++)
       {
         Extrap[ie]->SetOscPar(OscPar::kTh13,theta13);
@@ -958,7 +958,7 @@ void GridGen::RunMultiBin_VaryTheta13(string s)
         Extrap[ie]->SetOscPar(OscPar::kTh23,theta23);
         Extrap[ie]->OscillatePrediction();
       }
-      
+
       noff=0;
       for(i=0;i<nbins;i++)
       {
@@ -982,7 +982,7 @@ void GridGen::RunMultiBin_VaryTheta13(string s)
         }
       }
     }
-    
+
     noff=0;
     for(i=0;i<nbins;i++)
     {
@@ -1000,9 +1000,9 @@ void GridGen::RunMultiBin_VaryTheta13(string s)
       }
     }
     f->Close();
-    
+
     gROOT->cd("/");
-    
+
     for(i=0;i<nbins;i++)
     {
       for(ie=0;ie<Extrap.size();ie++)
@@ -1011,17 +1011,17 @@ void GridGen::RunMultiBin_VaryTheta13(string s)
       }
       ftree[i]->Fill();
     }
-    
+
     f = new TFile(gSystem->ExpandPathName(s.c_str()),"UPDATE");
-    
+
     if(l%100==0) cout<<100.*l/(nDeltaSteps+1)<<"% complete"<<endl;
     l++;
   }
-  
+
   f->Close();
-  
+
   double nPOTNear,nPOTFar;
-  
+
   TTree *paramtree = new TTree("paramtree","paramtree");
   paramtree->Branch("nearPOT",&nPOTNear,"nearPOT/D");
   paramtree->Branch("farPOT",&nPOTFar,"farPOT/D");
@@ -1030,17 +1030,17 @@ void GridGen::RunMultiBin_VaryTheta13(string s)
   paramtree->Branch("Theta23",&Theta23,"Theta23/D");
   paramtree->Branch("DeltaMSq23",&dm32,"DeltaMSq23/D");
   paramtree->Branch("DeltaMSq12",&DeltaMSq12,"DeltaMSq12/D");
-  
+
   dm32 = DeltaMSq23;
   if(!NormalHier) dm32 = -1.*DeltaMSq23;
-  
+
   for(ie=0;ie<Extrap.size();ie++)
   {
     nPOTNear = Extrap[ie]->GetNearPOT();
     nPOTFar = Extrap[ie]->GetFarPOT();
     paramtree->Fill();
   }
-  
+
   TFile *fout = new TFile(gSystem->ExpandPathName(outFileName.c_str()),"RECREATE");
   for(i=0;i<nbins;i++)
   {
@@ -1052,7 +1052,7 @@ void GridGen::RunMultiBin_VaryTheta13(string s)
   }
   paramtree->Write();
   fout->Close();
-  
+
   return;
 }
 
@@ -1084,12 +1084,12 @@ void GridGen::SetSinSqTh24SterileFit(double val) {
   return;
 }
 
-void GridGen::RunMultiBinOscParErrsSterileFit(string s, double SetDM41) {  
+void GridGen::RunMultiBinOscParErrsSterileFit(string s, double SetDM41) {
   if (Extrap.size() == 0) {
     cout << "No Extrapolate2D input.  Quitting..." << endl;
     return;
   }
-   
+
   for (unsigned int ie = 0; ie < Extrap.size(); ie++) {
     Extrap[ie]->GetPrediction();
   }
@@ -1160,10 +1160,10 @@ void GridGen::RunMultiBinOscParErrsSterileFit(string s, double SetDM41) {
     ttmp->Branch("Dmsq41", &dmsq41, "Dmsq41/D");
     ttmp->Branch("SinSq2Th14", &ssq2th14, "SinSq2Th14/D");
     ttmp->Branch("SinSq2Th24", &ssq2th24, "SinSq2Th24/D");
-    //ttmp->Branch("Delta13", &delta13, "Delta13/D");
-    //ttmp->Branch("Delta14", &delta14, "Delta14/D");
-    //ttmp->Branch("Delta24", &delta24, "Delta24/D");
-    //ttmp->Branch("Theta34", &th34, "Theta34/D");
+    ttmp->Branch("Delta13", &delta13, "Delta13/D");
+    ttmp->Branch("Delta14", &delta14, "Delta14/D");
+    ttmp->Branch("Delta24", &delta24, "Delta24/D");
+    ttmp->Branch("Theta34", &th34, "Theta34/D");
     ttmp->Branch("Signal", &sig[i], "Signal/D");
     ttmp->Branch("Background", &bkgd[i], "Background/D");
     ttmp->Branch("DNExp_DOscPars", &oscparerr[i], "DNExp_DOscPars/D");
@@ -1181,10 +1181,10 @@ void GridGen::RunMultiBinOscParErrsSterileFit(string s, double SetDM41) {
       ttmp->Branch("Dmsq41", &dmsq41, "Dmsq41/D");
       ttmp->Branch("SinSq2Th14", &ssq2th14, "SinSq2Th14/D");
       ttmp->Branch("SinSq2Th24", &ssq2th24, "SinSq2Th24/D");
-      //ttmp->Branch("Delta13", &delta13, "Delta13/D");
-      //ttmp->Branch("Delta14", &delta14, "Delta14/D");
-      //ttmp->Branch("Delta24", &delta24, "Delta14/D");
-      //ttmp->Branch("Theta34", &th34, "Theta34/D");
+      ttmp->Branch("Delta13", &delta13, "Delta13/D");
+      ttmp->Branch("Delta14", &delta14, "Delta14/D");
+      ttmp->Branch("Delta24", &delta24, "Delta14/D");
+      ttmp->Branch("Theta34", &th34, "Theta34/D");
       ttmp->Branch("Signal", &nue[i][j], "Signal/D");
       ttmp->Branch("NC", &nc[i][j], "NC/D");
       ttmp->Branch("NuMuCC", &numucc[i][j], "NuMuCC/D");
@@ -1215,7 +1215,7 @@ void GridGen::RunMultiBinOscParErrsSterileFit(string s, double SetDM41) {
   gRandom->SetSeed(0);
 
   TFile * f = new TFile(gSystem->ExpandPathName(s.c_str()), "RECREATE");
- 
+
 
   int l, u;
   l = 0;
