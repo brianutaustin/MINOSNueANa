@@ -42,6 +42,13 @@ class GridGen{
     virtual void RunMultiBinOscParErrs(string s = "OscParErrDistributions.root");
     virtual void RunMultiBin_VaryTheta13(string s = "OscParErrDistributions.root");
     
+    // Dung's code
+    virtual void SetNStepSinSqTh14SterileFit(int n = 100);
+    virtual void SetNStepSinSqTh24SterileFit(int n = 100);
+    virtual void SetSinSqTh14SterileFit(double);
+    virtual void SetSinSqTh24SterileFit(double);
+    virtual void RunMultiBinOscParErrsSterileFit(string s = "OscParErrDistributions.root", double dm41 = 0.1);
+    
   protected:
     
     double AsymGaus(Double_t sm, Double_t sp);
@@ -77,6 +84,13 @@ class GridGen{
     Double_t dTheta13_up,dTheta13_dn;
     
     Int_t NumExpts;
+
+private:
+    // Dung's code
+    Int_t NStepSinSqTh14;
+    Int_t NStepSinSqTh24;
+    double SinSqTh14GridValue;
+    double SinSqTh24GridValue;
 };
 
 #endif

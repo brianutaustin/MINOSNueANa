@@ -5864,22 +5864,8 @@ void NueFit2D::RunSterileFit() {
 
     if ((FracErr_Bkgd != 0) && (FracErr_Sig != 0)) {
       GenerateOneExperiment(nexp_bkgd, nexp_signal);
-      // Debug mode
-      /*
-         for (unsigned int countbin = 0; countbin < 18; countbin++) {
-         cout << "Nobs: " << NObs->GetBinContent(countbin+1) << "\tNexp: " << nexp->GetBinContent(countbin+1) << endl;
-         }
-       */
-      // if (NObs >= nexp_min) {
-      std::cout << "Okay here!" << std::endl;
-      dchi[nf] = BinLikelihood() - DoBinMinParam();
-      cout << "Min LNL value: " << DoBinMinParam() << endl;
-      // } else {
-      //  dchi[nf] = PoissonChi2(nexp) - PoissonChi2(nexp_min);
-      // }
+      dchi[nf] = BinLikelihood();
     }
-
-    std::cout << "Okay here too" << std::endl;
     cout << "dchi[" << nf << "]: " << dchi[nf] << endl;
     ofs << dchi[nf] << endl;
   }
@@ -5888,3 +5874,371 @@ void NueFit2D::RunSterileFit() {
 
   return;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Dung Run
+*/
+
+void NueFit2D::RunMultiBinPseudoExptsSterileFit(bool Print) {
+  if (FitMethod == 1 && (FracErr_Bkgd == 0 || FracErr_Sig == 0)) {
+    cout << "FracErr_Bkgd and FracErr_Sig need to be set for ScaledChi2.  Quitting..." << endl;
+    return;
+  }
+  if (Extrap.size() == 0) {
+    cout << "No Extrapolate2D input.  Quitting..." << endl;
+    return;
+  }
+  for (unsigned int ie = 0; ie < Extrap.size(); ie++) {
+    Extrap[ie]->GetPrediction();
+  }
+  if (ErrCalc == 0) {
+    cout << "Need to set ErrorCalc object!  Quitting..." << endl;
+    return;
+  }
+  if (FitMethod == 3) {
+    DefineStdDlnLMinuit();
+  }
+  if (FitMethod == 4) {
+    DefineBinDlnLMinuit();
+  }
+
+  nBins = Extrap[0]->Pred_TotalBkgd_VsBinNumber->GetNbinsX();
+  if (ErrorMatrix == 0) {
+    ErrorMatrix = new TH2D("ErrorMatrix", "", nBins, -0.5, nBins - 0.5, nBins, -0.5, nBins - 0.5);
+  }
+  if (InvErrorMatrix == 0) {
+    InvErrorMatrix = new TH2D("InvErrorMatrix", "", nBins, -0.5, nBins - 0.5, nBins, -0.5, nBins - 0.5);
+  }
+
+  TH2D * Error4Expts = new TH2D("Error4Expts", "", nBins, -0.5, nBins - 0.5, nBins, -0.5, nBins - 0.5);
+
+  ReadGridFiles();
+
+  if (nPts_Normal == 0 || nPts_Inverted == 0) {
+    return;
+  }
+
+  gRandom->SetSeed(0);
+
+  int i, u;
+  unsigned int j, k;
+  TH1D * nexp_bkgd = new TH1D("nexp_bkgd", "", nBins, -0.5, nBins - 0.5);
+  TH1D * nexp_signal = new TH1D("nexp_signal", "", nBins, -0.5, nBins - 0.5);
+  TH1D * nexp = new TH1D("nexp", "", nBins, -0.5, nBins - 0.5);
+  double delchi2, chi2min;
+  TH1D * chi2hist = new TH1D("chi2hist", "", 110000, -10, 100);
+  double ele;
+  int noff;
+
+  vector< vector<double> > nc, numucc, bnuecc, nutaucc, sig;
+  for (j = 0; j < nBins; j++) {
+    nc.push_back(vector<double>() );
+    numucc.push_back(vector<double>() );
+    bnuecc.push_back(vector<double>() );
+    nutaucc.push_back(vector<double>() );
+    sig.push_back(vector<double>() );
+    for (k = 0; k < Extrap.size(); k++) {
+      nc[j].push_back(0);
+      numucc[j].push_back(0);
+      bnuecc[j].push_back(0);
+      nutaucc[j].push_back(0);
+      sig[j].push_back(0);
+    }
+  }
+
+  Bkgd = (TH1D *) nexp->Clone("Bkgd");
+  Bkgd->Reset();
+  Sig = (TH1D *) nexp->Clone("Sig");
+  Sig->Reset();
+
+  ofstream myfile;
+  string file, ofile;
+
+  // normal hierarchy
+
+  TFile * f = new TFile(gSystem->ExpandPathName(outFileName.c_str()), "RECREATE");
+
+  if (Print) {
+    ofile = gSystem->ExpandPathName(outFileName.c_str());
+    file = ofile.substr(0, ofile.length() - 5) + "_Normal.dat";
+    myfile.open(gSystem->ExpandPathName(file.c_str()));
+  }
+
+  for (i = 0; i < nPts_Normal; i++) {
+    cout << "point " << (i + 1) << "/" << nPts_Normal << " (normal hierarchy)" << endl;
+
+    nexp_bkgd->Reset();
+    nexp_signal->Reset();
+    nexp->Reset();
+
+    for (j = 0; j < nBins; j++) {
+      GridTree_Normal[j]->GetEntry(i);
+      nexp_bkgd->SetBinContent(j + 1, grid_background * GridScale_Normal);
+      nexp_signal->SetBinContent(j + 1, grid_signal * GridScale_Normal);
+
+      for (k = 0; k < Extrap.size(); k++) {
+        GridTree_2_Normal[j][k]->GetEntry(i);
+        nc[j][k] = grid_nc * GridScale_Normal;
+        numucc[j][k] = grid_numucc * GridScale_Normal;
+        bnuecc[j][k] = grid_bnuecc * GridScale_Normal;
+        nutaucc[j][k] = grid_nutaucc * GridScale_Normal;
+        sig[j][k] = grid_nue * GridScale_Normal;
+      }
+    }
+    nexp->Add(nexp_bkgd, nexp_signal, 1, 1);
+    ErrCalc->SetGridPred(nBins, nc, numucc, bnuecc, nutaucc, sig);
+
+    Error4Expts->Reset();
+    ErrCalc->SetUseGrid(true);
+    ErrCalc->CalculateSystErrorMatrix();
+    Error4Expts->Add(ErrCalc->CovMatrix);
+    ErrCalc->CalculateHOOError();
+    Error4Expts->Add(ErrCalc->CovMatrix_Decomp);
+    if (IncludeOscParErrs) {
+      noff = 0;
+      for (j = 0; j < nBins; j++) {
+        ele = Error4Expts->GetBinContent(j + 1, j + 1);
+        ele += (grid_bin_oscparerr[j] * grid_bin_oscparerr[j] * nexp->GetBinContent(j + 1) * nexp->GetBinContent(j + 1));
+        Error4Expts->SetBinContent(j + 1, j + 1, ele);
+
+        for (k = 0; k < nBins; k++) {
+          if (k > j) {
+            ele = Error4Expts->GetBinContent(j + 1, k + 1);
+            ele += (grid_bin_oscparerr[j] * grid_bin_oscparerr[k] * nexp->GetBinContent(j + 1) * nexp->GetBinContent(k + 1));
+            Error4Expts->SetBinContent(j + 1, k + 1, ele);
+
+            ele = Error4Expts->GetBinContent(k + 1, j + 1);
+            ele += (grid_bin_oscparerr[j] * grid_bin_oscparerr[k] * nexp->GetBinContent(j + 1) * nexp->GetBinContent(k + 1));
+            Error4Expts->SetBinContent(k + 1, j + 1, ele);
+
+            noff++;
+          }
+        }
+      }
+    }
+
+    chi2hist->Reset();
+    chi2hist->SetName(Form("Chi2Hist_Normal_%i", i));
+
+    for (u = 0; u < NumExpts; u++) {
+      cout << "expt " << (u + 1) << "/" << NumExpts << endl;
+
+      GenerateOneCorrelatedExp(nexp, Error4Expts);
+      if (Print) {
+        myfile << grid_sinsq2th13 << " " << grid_delta << " ";
+        for (j = 0; j < nBins; j++) {
+          myfile << NObs->GetBinContent(j + 1) << " ";
+        }
+        myfile << endl;
+      }
+
+      chi2min = GetMinLikelihood(grid_delta, true);
+
+      ErrCalc->SetUseGrid(true); // will use the grid predictions set above
+      delchi2 = 1e10;
+      if (FitMethod == 0) {
+        delchi2 = PoissonChi2(nexp) - chi2min;
+      } else if (FitMethod == 1) {
+        delchi2 = ScaledChi2(nexp_bkgd, nexp_signal) - chi2min;
+      } else if (FitMethod == 2) {
+        delchi2 = StandardChi2(nexp) - chi2min;
+      } else if (FitMethod == 3) {
+        // Likelihood: "Standard" (N syst, N nuisance)
+        // Calculate the likelihood (x2 for chi)
+        Bkgd->Reset();
+        Bkgd->Add(nexp_bkgd);
+        Sig->Reset();
+        Sig->Add(nexp_signal);
+        delchi2 = StandardLikelihood() - chi2min;
+      } else if (FitMethod == 4) {
+        // Likelihood: Bin by Bin Calculation of Systematics
+        // Calculate the likelihood (x2 for chi)
+        Bkgd->Reset();
+        Bkgd->Add(nexp_bkgd);
+        Sig->Reset();
+        Sig->Add(nexp_signal);
+        delchi2 = BinLikelihood() - chi2min;
+      } else {
+        cout << "Error in RunMultiBinPseudoExpts(): Unknown 'FitMethod'." << endl;
+      }
+      chi2hist->Fill(delchi2);
+
+    }
+    f->cd();
+    chi2hist->Write();
+    f->Close();
+
+    f = new TFile(gSystem->ExpandPathName(outFileName.c_str()), "UPDATE");
+  }
+
+  if (Print) {
+    myfile.close();
+  }
+
+  for (j = 0; j < nBins; j++) {
+    GridTree_Normal[j]->Write();
+
+    for (k = 0; k < Extrap.size(); k++) {
+      GridTree_2_Normal[j][k]->Write();
+    }
+  }
+
+  f->Close();
+
+  // inverted hierarchy
+
+  f = new TFile(gSystem->ExpandPathName(outFileName.c_str()), "UPDATE");
+
+  if (Print) {
+    ofile = gSystem->ExpandPathName(outFileName.c_str());
+    file = ofile.substr(0, ofile.length() - 5) + "_Inverted.dat";
+    myfile.open(gSystem->ExpandPathName(file.c_str()));
+  }
+
+  for (i = 0; i < nPts_Inverted; i++) {
+    cout << "point " << (i + 1) << "/" << nPts_Inverted << " (inverted hierarchy)" << endl;
+
+    nexp_bkgd->Reset();
+    nexp_signal->Reset();
+    nexp->Reset();
+
+    for (j = 0; j < nBins; j++) {
+      GridTree_Inverted[j]->GetEntry(i);
+      nexp_bkgd->SetBinContent(j + 1, grid_background * GridScale_Inverted);
+      nexp_signal->SetBinContent(j + 1, grid_signal * GridScale_Inverted);
+
+      for (k = 0; k < Extrap.size(); k++) {
+        GridTree_2_Inverted[j][k]->GetEntry(i);
+        nc[j][k] = grid_nc * GridScale_Inverted;
+        numucc[j][k] = grid_numucc * GridScale_Inverted;
+        bnuecc[j][k] = grid_bnuecc * GridScale_Inverted;
+        nutaucc[j][k] = grid_nutaucc * GridScale_Inverted;
+        sig[j][k] = grid_nue * GridScale_Inverted;
+      }
+    }
+    nexp->Add(nexp_bkgd, nexp_signal, 1, 1);
+    ErrCalc->SetGridPred(nBins, nc, numucc, bnuecc, nutaucc, sig);
+
+    Error4Expts->Reset();
+    ErrCalc->SetUseGrid(true);
+    ErrCalc->CalculateSystErrorMatrix();
+    Error4Expts->Add(ErrCalc->CovMatrix);
+    ErrCalc->CalculateHOOError();
+    Error4Expts->Add(ErrCalc->CovMatrix_Decomp);
+    if (IncludeOscParErrs) {
+      noff = 0;
+      for (j = 0; j < nBins; j++) {
+        ele = Error4Expts->GetBinContent(j + 1, j + 1);
+        ele += (grid_bin_oscparerr[j] * grid_bin_oscparerr[j] * nexp->GetBinContent(j + 1) * nexp->GetBinContent(j + 1));
+        Error4Expts->SetBinContent(j + 1, j + 1, ele);
+
+        for (k = 0; k < nBins; k++) {
+          if (k > j) {
+            ele = Error4Expts->GetBinContent(j + 1, k + 1);
+            ele += (grid_bin_oscparerr[j] * grid_bin_oscparerr[k] * nexp->GetBinContent(j + 1) * nexp->GetBinContent(k + 1));
+            Error4Expts->SetBinContent(j + 1, k + 1, ele);
+
+            ele = Error4Expts->GetBinContent(k + 1, j + 1);
+            ele += (grid_bin_oscparerr[j] * grid_bin_oscparerr[k] * nexp->GetBinContent(j + 1) * nexp->GetBinContent(k + 1));
+            Error4Expts->SetBinContent(k + 1, j + 1, ele);
+
+            noff++;
+          }
+        }
+      }
+    }
+
+    chi2hist->Reset();
+    chi2hist->SetName(Form("Chi2Hist_Inverted_%i", i));
+
+    for (u = 0; u < NumExpts; u++) {
+      cout << "expt " << (u + 1) << "/" << NumExpts << endl;
+
+      GenerateOneCorrelatedExp(nexp, Error4Expts);
+      if (Print) {
+        myfile << grid_sinsq2th13 << " " << grid_delta << " ";
+        for (j = 0; j < nBins; j++) {
+          myfile << NObs->GetBinContent(j + 1) << " ";
+        }
+        myfile << endl;
+      }
+
+      chi2min = GetMinLikelihood(grid_delta, false);
+
+      ErrCalc->SetUseGrid(true); // will use the grid predictions set above
+      delchi2 = 1e10;
+      if (FitMethod == 0) {
+        delchi2 = PoissonChi2(nexp) - chi2min;
+      } else if (FitMethod == 1) {
+        delchi2 = ScaledChi2(nexp_bkgd, nexp_signal) - chi2min;
+      } else if (FitMethod == 2) {
+        delchi2 = StandardChi2(nexp) - chi2min;
+      } else if (FitMethod == 3) {
+        // Likelihood: "Standard" (N syst, N nuisance)
+        // Calculate the likelihood (x2 for chi)
+        Bkgd->Reset();
+        Bkgd->Add(nexp_bkgd);
+        Sig->Reset();
+        Sig->Add(nexp_signal);
+        delchi2 = StandardLikelihood() - chi2min;
+      } else if (FitMethod == 4) {
+        // Likelihood: Bin by Bin Calculation of Systematics
+        // Calculate the likelihood (x2 for chi)
+        Bkgd->Reset();
+        Bkgd->Add(nexp_bkgd);
+        Sig->Reset();
+        Sig->Add(nexp_signal);
+        delchi2 = BinLikelihood() - chi2min;
+      } else {
+        cout << "Error in RunMultiBinPseudoExpts(): Unknown 'FitMethod'." << endl;
+      }
+      chi2hist->Fill(delchi2);
+    }
+    f->cd();
+    chi2hist->Write();
+    f->Close();
+    f = new TFile(gSystem->ExpandPathName(outFileName.c_str()), "UPDATE");
+  }
+
+  if (Print) {
+    myfile.close();
+  }
+
+  for (j = 0; j < nBins; j++) {
+    GridTree_Inverted[j]->Write();
+    for (k = 0; k < Extrap.size(); k++) {
+      GridTree_2_Inverted[j][k]->Write();
+    }
+  }
+
+  f->Close();
+
+  return;
+}
+
