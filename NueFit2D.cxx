@@ -133,12 +133,15 @@ double NueFit2D::DoGlobalMinSearchSterileFit(vector<double> SinStart) {
   gMinuit = ssgMinuit;
   ssgMinuit->SetObjectFit(this);
   ssgMinuit->SetFCN(globalGridFunction);
+  ssgMinuit->SetPrintLevel(-1);
 
   Double_t * startValue = new Double_t[2];
   Double_t * stepValue = new Double_t[2];
   Double_t * Bmin = new Double_t[2];
   Double_t * Bmax = new Double_t[2];
   Int_t iErflg = 0;
+  double arglist[1];
+  arglist[0] = 1.e-2;
 
   // Set the parameters
   for (Int_t i = 0; i < 2; i++) {
@@ -148,6 +151,7 @@ double NueFit2D::DoGlobalMinSearchSterileFit(vector<double> SinStart) {
     Bmax[i] = 1.0;
     ssgMinuit->mnparm(i, Form("f%i", i), startValue[i], stepValue[i], Bmin[i], Bmax[i], iErflg);
   }
+  ssgMinuit->mnexcm("SET EPS", arglist, 1, iErflg);
 
   // Resets function value and errors to UNDEFINED:
   ssgMinuit->mnrset(1);
@@ -158,8 +162,9 @@ double NueFit2D::DoGlobalMinSearchSterileFit(vector<double> SinStart) {
   // Max iterations:
   ssgMinuit->SetMaxIterations(500);
   // Go minimize!
-  ssgMinuit->SetPrintLevel(-1);
+  cout << "Start minimizing..." << endl;
   ssgMinuit->Migrad();
+  cout << "Done minimizing!" << endl;
   // Get the minimum for the function
   double minpoint = ssgMinuit->fAmin;
 
@@ -431,7 +436,7 @@ void NueFit2D::DefineBinDlnLMinuit() {
   double arglist[1];
   int ierflg = 0;
 
-  arglist[0] = 1.e-5;
+  arglist[0] = 1.e-3;
   minuit->mnexcm("SET EPS", arglist, 1, ierflg);
 
 
@@ -6062,8 +6067,8 @@ void NueFit2D::RunMultiBinPseudoExptsSterileFit(bool Print) {
       }
 
       vector<double> SSS;
-      SSS.at(0) = grid_sinsqth14;
-      SSS.at(0) = grid_sinsqth24;
+      SSS.push_back(grid_sinsqth14);
+      SSS.push_back(grid_sinsqth24);
       chi2min = DoGlobalMinSearchSterileFit(SSS);
 
       ErrCalc->SetUseGrid(true); // will use the grid predictions set above

@@ -307,7 +307,7 @@ public:
     void RunMultiBinPseudoExptsSterileFit(bool);
     void RunSterileFit(); // Obsolete (don't use except when you're Dung)
     double GetMinLikelihoodSterileFit();
-    double DoGlobalMinSearchSterileFit();
+    double DoGlobalMinSearchSterileFit(vector<double>);
     double StdLikeComparisonForGlobalMinSterileFit(vector<double>);
 
 protected:
