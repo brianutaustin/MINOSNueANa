@@ -5840,7 +5840,8 @@ void NueFit2D::RunMultiBinPseudoExptsSterileFit(bool Print) {
     myfile.open(gSystem->ExpandPathName(file.c_str()));
   }
 
-  for (unsigned int i = 0; i < nPts_Normal; i++) {
+  for (unsigned int i = 0; i < 1; i++) { // Testing with only one point
+  //for (unsigned int i = 0; i < nPts_Normal; i++) { 
     cout << "point " << (i + 1) << "/" << nPts_Normal << " (normal hierarchy)" << endl;
 
     nexp_bkgd->Reset();
@@ -5935,6 +5936,7 @@ void NueFit2D::RunMultiBinPseudoExptsSterileFit(bool Print) {
         Sig->Reset();
         Sig->Add(nexp_signal);
         delchi2 = BinLikelihood() - chi2min;
+	cout << "Delta Chisquare for pseudo-exp " << u << " of point " << i << " is " << delchi2 << endl; 
       } else {
         cout << "Error in RunMultiBinPseudoExpts(): Unknown 'FitMethod'." << endl;
       }
@@ -6099,6 +6101,7 @@ double NueFit2D::GetMinLikelihoodSterileFit() {
   double theLikelihood = 1e10;
   double minSinSqTh14;
   double minSinSqTh24;
+  /*
   for (unsigned int i = 0; i < 11; i++) {
     double gridSinSTH14 = i / 10;
     for (unsigned int j = 0; j < 11; j++) {
@@ -6154,11 +6157,12 @@ double NueFit2D::GetMinLikelihoodSterileFit() {
       }
     }
   }
+  */
 
   for (int i = -5; i < 6; i++) {
-    double gridSinSTH14 = minSinSqTh14 + i * 0.01;
+    double gridSinSTH14 = grid_sinsqth14 + i * 0.01;
     for (int j = -5; j < 6; j++) {
-      double gridSinSTH24 = minSinSqTh24 + j * 0.01;
+      double gridSinSTH24 = grid_sinsqth24 + j * 0.01;
       for (unsigned int ie = 0; ie < Extrap.size(); ie++) {
         Extrap[ie]->SetOscPar(OscPar::kTh14, TMath::ASin(TMath::Sqrt(gridSinSTH14)));
         Extrap[ie]->SetOscPar(OscPar::kTh24, TMath::ASin(TMath::Sqrt(gridSinSTH24)));
@@ -6210,6 +6214,7 @@ double NueFit2D::GetMinLikelihoodSterileFit() {
       }
     }
   }
+  cout << "The min likelihood is " << theLikelihood << " at " << minSinSqTh14 << " - " << minSinSqTh24 << endl;
 
   return theLikelihood;
 }
