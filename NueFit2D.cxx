@@ -133,7 +133,7 @@ double NueFit2D::DoGlobalMinSearchSterileFit(vector<double> SinStart) {
   gMinuit = ssgMinuit;
   ssgMinuit->SetObjectFit(this);
   ssgMinuit->SetFCN(globalGridFunction);
-  ssgMinuit->SetPrintLevel(-1);
+  ssgMinuit->SetPrintLevel(1);
 
   Double_t * startValue = new Double_t[2];
   Double_t * stepValue = new Double_t[2];
@@ -149,7 +149,7 @@ double NueFit2D::DoGlobalMinSearchSterileFit(vector<double> SinStart) {
     stepValue[i] = 0.01;
     Bmin[i] = 0.0;
     Bmax[i] = 1.0;
-    ssgMinuit->mnparm(i, Form("f%i", i), startValue[i], stepValue[i], Bmin[i], Bmax[i], iErflg);
+    ssgMinuit->mnparm(i, Form("Sin%i", i), startValue[i], stepValue[i], Bmin[i], Bmax[i], iErflg);
   }
   ssgMinuit->mnexcm("SET EPS", arglist, 1, iErflg);
 
@@ -838,7 +838,9 @@ double NueFit2D::DoBinMinParam() {
   minuit->SetMaxIterations(500);
   // Go minimize!
   minuit->SetPrintLevel(-1);
+  cout << "Migrading..." << endl;
   minuit->Migrad();
+  cout << "Done Migrading..." << endl;
   // Get the minimum for the function
   double minpoint = minuit->fAmin;
 
