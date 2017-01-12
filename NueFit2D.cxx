@@ -128,7 +128,7 @@ double NueFit2D::StdLikeComparisonForGlobalMinSterileFit(vector<double> npar) {
   return c2;
 }
 
-double NueFit2D::DoGlobalMinSearchSterileFit() {
+double NueFit2D::DoGlobalMinSearchSterileFit(vector<double> SinStart) {
   TMinuit *ssgMinuit = new TMinuit(2);
   gMinuit = ssgMinuit;
   ssgMinuit->SetObjectFit(this);
@@ -142,8 +142,8 @@ double NueFit2D::DoGlobalMinSearchSterileFit() {
 
   // Set the parameters
   for (Int_t i = 0; i < 2; i++) {
-    startValue[i] = 0.0;
-    stepValue[i] = 0.02;
+    startValue[i] = SinStart.at(i);
+    stepValue[i] = 0.01;
     Bmin[i] = 0.0;
     Bmax[i] = 1.0;
     ssgMinuit->mnparm(i, Form("f%i", i), startValue[i], stepValue[i], Bmin[i], Bmax[i], iErflg);
@@ -6061,7 +6061,10 @@ void NueFit2D::RunMultiBinPseudoExptsSterileFit(bool Print) {
         myfile << endl;
       }
 
-      chi2min = DoGlobalMinSearchSterileFit();
+      vector<double> SSS;
+      SSS.at(0) = grid_sinsqth14;
+      SSS.at(0) = grid_sinsqth24;
+      chi2min = DoGlobalMinSearchSterileFit(SSS);
 
       ErrCalc->SetUseGrid(true); // will use the grid predictions set above
       delchi2 = 1e10;
@@ -6193,7 +6196,7 @@ void NueFit2D::ReadGridFilesSterileFit() {
   return;
 }
 
-
+/*
 double NueFit2D::GetMinLikelihoodSterileFit() {
   if (NObs == 0) {
     cout << "NObs not set.  Quitting..." << endl;
@@ -6252,7 +6255,7 @@ double NueFit2D::GetMinLikelihoodSterileFit() {
   double theLikelihood = 1e10;
   double minSinSqTh14;
   double minSinSqTh24;
-  /*
+
   for (unsigned int i = 0; i < 11; i++) {
     double gridSinSTH14 = i / 10;
     for (unsigned int j = 0; j < 11; j++) {
@@ -6308,7 +6311,7 @@ double NueFit2D::GetMinLikelihoodSterileFit() {
       }
     }
   }
-  */
+
 
   for (int i = -5; i < 6; i++) {
     double gridSinSTH14 = grid_sinsqth14 + i * 0.01;
@@ -6369,3 +6372,4 @@ double NueFit2D::GetMinLikelihoodSterileFit() {
 
   return theLikelihood;
 }
+*/
