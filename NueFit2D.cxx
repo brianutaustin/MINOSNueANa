@@ -97,6 +97,7 @@ double NueFit2D::StdLikeComparisonForGlobalMinSterileFit(vector<double> npar) {
   NExp->Add(Sig);
 
   double c2;
+  vector<double> emptyPar;
   switch (FitMethod) {
     case 0: {
       c2 = PoissonChi2(NExp);
@@ -115,12 +116,13 @@ double NueFit2D::StdLikeComparisonForGlobalMinSterileFit(vector<double> npar) {
       break;
     }
     case 4: {
-      c2 = BinLikelihood();
+      cout << "--- Running..."
+      c2 = BinLikeComparison(emptyPar);
       break;
     }
     default: {
       cout << "Error in GetMinLikelihoodSterileFit(): Unknown 'FitMethod'. BinLikelihood() is used." << endl;
-      c2 = BinLikelihood();
+      c2 = BinLikeComparison(emptyPar);
       break;
     }
   }
