@@ -16,6 +16,156 @@ static void dlnlFunction(int &npar, double * /*gin*/, double &result, double * p
 
 }
 
+static void globalGridFunction(int &, double * /*gin*/, double &likelihoodValue, double * gridPar, int /*iflag*/) {
+
+  std::vector<double> f;
+  NueFit2D * nf2d = (NueFit2D *) gMinuit->GetObjectFit();
+
+  for (Int_t i = 0; i < 2; i++) {
+    f.push_back(gridPar[i]);
+  }
+  likelihoodValue = nf2d->StdLikeComparisonForGlobalMinSterileFit(f);
+
+}
+
+double NueFit2D::StdLikeComparisonForGlobalMinSterileFit(vector<double> npar) {
+  if (NObs == 0) {
+    cout << "NObs not set.  Quitting..." << endl;
+    return 0;
+  }
+  if (FitMethod == 1 && (FracErr_Bkgd == 0 || FracErr_Sig == 0)) {
+    cout << "FracErr_Bkgd and FracErr_Sig need to be set for ScaledChi2.  Quitting..." << endl;
+    return 0;
+  }
+  if (Extrap.size() == 0) {
+    cout << "No Extrapolate2D input.  Quitting..." << endl;
+    return 0;
+  }
+
+  if (FitMethod == 3) {
+    DefineStdDlnLMinuit();
+  }
+  if (FitMethod == 4) {
+    DefineBinDlnLMinuit();
+  }
+  if (FitMethod == 3 || FitMethod == 4) {
+    if (ErrCalc != 0) {
+      ErrCalc->SetUseGrid(false);
+    }
+  }
+
+  Bkgd = (TH1D *) NObs->Clone("Bkgd");
+  Bkgd->Reset();
+  Sig = (TH1D *) NObs->Clone("Sig");
+  Sig->Reset();
+  TH1D * NExp = (TH1D *) NObs->Clone("NExp");
+  NExp->Reset();
+
+  for (unsigned int ie = 0; ie < Extrap.size(); ie++) {
+    Extrap[ie]->GetPrediction();
+    Extrap[ie]->SetOscPar(OscPar::kTh12, grid_n_th12);
+    Extrap[ie]->SetOscPar(OscPar::kTh13, grid_n_th13);
+    Extrap[ie]->SetOscPar(OscPar::kTh23, grid_n_th23);
+    Extrap[ie]->SetOscPar(OscPar::kDeltaM12, grid_n_dm2_21);
+    Extrap[ie]->SetOscPar(OscPar::kDeltaM23, grid_n_dm2_32);
+    Extrap[ie]->SetOscPar(OscPar::kDm41, grid_dmsq41);
+    Extrap[ie]->SetOscPar(OscPar::kTh34, grid_th34);
+    Extrap[ie]->SetOscPar(OscPar::kDelta, grid_delta13);
+    Extrap[ie]->SetOscPar(OscPar::kDelta14, grid_delta14);
+    Extrap[ie]->SetOscPar(OscPar::kDelta24, grid_delta24);
+
+    Extrap[ie]->SetOscPar(OscPar::kTh14, TMath::ASin(TMath::Sqrt(npar.at(0))));
+    Extrap[ie]->SetOscPar(OscPar::kTh24, TMath::ASin(TMath::Sqrt(npar.at(1))));
+    Extrap[ie]->OscillatePrediction();
+  }
+
+  if (ErrorMatrix == 0) {
+    ErrorMatrix = new TH2D("ErrorMatrix", "", nBins, -0.5, nBins - 0.5, nBins, -0.5, nBins - 0.5);
+  }
+  if (InvErrorMatrix == 0) {
+    InvErrorMatrix = new TH2D("InvErrorMatrix", "", nBins, -0.5, nBins - 0.5, nBins, -0.5, nBins - 0.5);
+  }
+
+  Bkgd->Reset();
+  Sig->Reset();
+  NExp->Reset();
+  for (unsigned int ie = 0; ie < Extrap.size(); ie++) {
+    Bkgd->Add(Extrap[ie]->Pred_TotalBkgd_VsBinNumber);
+    Sig->Add(Extrap[ie]->Pred_Signal_VsBinNumber);
+  }
+  NExp->Add(Bkgd);
+  NExp->Add(Sig);
+
+  double c2;
+  switch (FitMethod) {
+    case 0: {
+      c2 = PoissonChi2(NExp);
+      break;
+    }
+    case 1: {
+      c2 = ScaledChi2(Bkgd, Sig);
+      break;
+    }
+    case 2: {
+      c2 = StandardChi2(NExp);
+      break;
+    }
+    case 3: {
+      c2 = StandardLikelihood();
+      break;
+    }
+    case 4: {
+      c2 = BinLikelihood();
+      break;
+    }
+    default: {
+      cout << "Error in GetMinLikelihoodSterileFit(): Unknown 'FitMethod'. BinLikelihood() is used." << endl;
+      c2 = BinLikelihood();
+      break;
+    }
+  }
+
+  return c2;
+}
+
+double NueFit2D::DoGlobalMinSearchSterileFit() {
+  TMinuit *ssgMinuit = new TMinuit(2);
+  gMinuit = ssgMinuit;
+  ssgMinuit->SetObjectFit(this);
+  ssgMinuit->SetFCN(globalGridFunction);
+
+  Double_t * startValue = new Double_t[2];
+  Double_t * stepValue = new Double_t[2];
+  Double_t * Bmin = new Double_t[2];
+  Double_t * Bmax = new Double_t[2];
+  Int_t iErflg = 0;
+
+  // Set the parameters
+  for (Int_t i = 0; i < 2; i++) {
+    startValue[i] = 0.0;
+    stepValue[i] = 0.02;
+    Bmin[i] = 0.0;
+    Bmax[i] = 1.0;
+    ssgMinuit->mnparm(i, Form("f%i", i), startValue[i], stepValue[i], Bmin[i], Bmax[i], iErflg);
+  }
+
+  // Resets function value and errors to UNDEFINED:
+  ssgMinuit->mnrset(1);
+
+  // 1 std dev for dlnl:
+  ssgMinuit->SetErrorDef(1.0);
+
+  // Max iterations:
+  ssgMinuit->SetMaxIterations(500);
+  // Go minimize!
+  ssgMinuit->SetPrintLevel(-1);
+  ssgMinuit->Migrad();
+  // Get the minimum for the function
+  double minpoint = ssgMinuit->fAmin;
+
+  return minpoint;
+}
+
 static void binFunction(int &npar, double * /*gin*/, double &result, double * par, int /*iflag*/) {
 
   std::vector<double> f;
@@ -682,6 +832,7 @@ double NueFit2D::DoBinMinParam() {
   // Max iterations:
   minuit->SetMaxIterations(500);
   // Go minimize!
+  minuit->SetPrintLevel(-1);
   minuit->Migrad();
   // Get the minimum for the function
   double minpoint = minuit->fAmin;
@@ -5841,7 +5992,7 @@ void NueFit2D::RunMultiBinPseudoExptsSterileFit(bool Print) {
   }
 
   for (unsigned int i = 0; i < 1; i++) { // Testing with only one point
-  //for (unsigned int i = 0; i < nPts_Normal; i++) { 
+  //for (unsigned int i = 0; i < nPts_Normal; i++) {
     cout << "point " << (i + 1) << "/" << nPts_Normal << " (normal hierarchy)" << endl;
 
     nexp_bkgd->Reset();
@@ -5910,7 +6061,7 @@ void NueFit2D::RunMultiBinPseudoExptsSterileFit(bool Print) {
         myfile << endl;
       }
 
-      chi2min = GetMinLikelihoodSterileFit();
+      chi2min = DoGlobalMinSearchSterileFit();
 
       ErrCalc->SetUseGrid(true); // will use the grid predictions set above
       delchi2 = 1e10;
@@ -5936,7 +6087,7 @@ void NueFit2D::RunMultiBinPseudoExptsSterileFit(bool Print) {
         Sig->Reset();
         Sig->Add(nexp_signal);
         delchi2 = BinLikelihood() - chi2min;
-	cout << "Delta Chisquare for pseudo-exp " << u << " of point " << i << " is " << delchi2 << endl; 
+	cout << "Delta Chisquare for pseudo-exp " << u << " of point " << i << " is " << delchi2 << endl;
       } else {
         cout << "Error in RunMultiBinPseudoExpts(): Unknown 'FitMethod'." << endl;
       }
