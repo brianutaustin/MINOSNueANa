@@ -6076,20 +6076,18 @@ double NueFit2D::GetMinLikelihoodSterileFit() {
 
   for (unsigned int ie = 0; ie < Extrap.size(); ie++) {
     Extrap[ie]->GetPrediction();
-    Extrap[ie]->SetOscPar(OscPar::kTh12, Theta12);
-    Extrap[ie]->SetOscPar(OscPar::kTh13, Theta13);
-    Extrap[ie]->SetOscPar(OscPar::kTh23, Theta23);
-    Extrap[ie]->SetOscPar(OscPar::kTh34, 0);
-    Extrap[ie]->SetOscPar(OscPar::kDeltaM12, DeltaMSq12);
-    Extrap[ie]->SetOscPar(OscPar::kDeltaM23, DeltaMSq23);
-    Extrap[ie]->SetOscPar(OscPar::kDm41, dmsq41);
-    Extrap[ie]->SetOscPar(OscPar::kDelta, 0);
-    Extrap[ie]->SetOscPar(OscPar::kDelta14, 0);
-    Extrap[ie]->SetOscPar(OscPar::kDelta24, 0);
+    Extrap[ie]->SetOscPar(OscPar::kTh12, grid_n_th12);
+    Extrap[ie]->SetOscPar(OscPar::kTh13, grid_n_th13);
+    Extrap[ie]->SetOscPar(OscPar::kTh23, grid_n_th23);
+    Extrap[ie]->SetOscPar(OscPar::kDeltaM12, grid_n_dm2_21);
+    Extrap[ie]->SetOscPar(OscPar::kDeltaM23, grid_n_dm2_32);
+    Extrap[ie]->SetOscPar(OscPar::kDm41, grid_dmsq41);
+    Extrap[ie]->SetOscPar(OscPar::kTh34, grid_th34);
+    Extrap[ie]->SetOscPar(OscPar::kDelta, grid_delta13);
+    Extrap[ie]->SetOscPar(OscPar::kDelta14, grid_delta14);
+    Extrap[ie]->SetOscPar(OscPar::kDelta24, grid_delta24);
     Extrap[ie]->OscillatePrediction();
   }
-
-  Int_t i;
 
   if (ErrorMatrix == 0) {
     ErrorMatrix = new TH2D("ErrorMatrix", "", nBins, -0.5, nBins - 0.5, nBins, -0.5, nBins - 0.5);
@@ -6098,55 +6096,120 @@ double NueFit2D::GetMinLikelihoodSterileFit() {
     InvErrorMatrix = new TH2D("InvErrorMatrix", "", nBins, -0.5, nBins - 0.5, nBins, -0.5, nBins - 0.5);
   }
 
-  Double_t ss2th13 = 0;
-  TF1 * fit;
-  double minchi2;
+  double theLikelihood = 1e10;
+  double minSinSqTh14;
+  double minSinSqTh24;
+  for (unsigned int i = 0; i < 11; i++) {
+    double gridSinSTH14 = i / 10;
+    for (unsigned int j = 0; j < 11; j++) {
+      double gridSinSTH24 = j / 10;
+      for (unsigned int ie = 0; ie < Extrap.size(); ie++) {
+        Extrap[ie]->SetOscPar(OscPar::kTh14, TMath::ASin(TMath::Sqrt(gridSinSTH14)));
+        Extrap[ie]->SetOscPar(OscPar::kTh24, TMath::ASin(TMath::Sqrt(gridSinSTH24)));
+        Extrap[ie]->OscillatePrediction();
+      }
+      Bkgd->Reset();
+      Sig->Reset();
+      NExp->Reset();
+      for (unsigned int ie = 0; ie < Extrap.size(); ie++) {
+        Bkgd->Add(Extrap[ie]->Pred_TotalBkgd_VsBinNumber);
+        Sig->Add(Extrap[ie]->Pred_Signal_VsBinNumber);
+      }
+      NExp->Add(Bkgd);
+      NExp->Add(Sig);
 
-  const int ns = 30;
-  double max = 0.6;
-  double width = max / ns;
-  double th13[ns], c2[ns];
-  for (i = 0; i < ns; i++) {
-    ss2th13 = i * width;
-    th13[i] = ss2th13;
-    for (ie = 0; ie < Extrap.size(); ie++) {
-      Extrap[ie]->SetSinSq2Th13(ss2th13);
-      Extrap[ie]->OscillatePrediction();
-    }
-    Bkgd->Reset();
-    Sig->Reset();
-    NExp->Reset();
-    for (ie = 0; ie < Extrap.size(); ie++) {
-      Bkgd->Add(Extrap[ie]->Pred_TotalBkgd_VsBinNumber);
-      Sig->Add(Extrap[ie]->Pred_Signal_VsBinNumber);
-    }
-    NExp->Add(Bkgd);
-    NExp->Add(Sig);
+      double c2;
+      switch (FitMethod) {
+        case 0: {
+          c2 = PoissonChi2(NExp);
+          break;
+        }
+        case 1: {
+          c2 = ScaledChi2(Bkgd, Sig);
+          break;
+        }
+        case 2: {
+          c2 = StandardChi2(NExp);
+          break;
+        }
+        case 3: {
+          c2 = StandardLikelihood();
+          break;
+        }
+        case 4: {
+          c2 = BinLikelihood();
+          break;
+        }
+        default: {
+          cout << "Error in GetMinLikelihoodSterileFit(): Unknown 'FitMethod'. BinLikelihood() is used." << endl;
+          c2 = BinLikelihood();
+          break;
+        }
+      }
 
-    c2[i] = 1e10;
-    if (FitMethod == 0) {
-      c2[i] = PoissonChi2(NExp);
-    } else if (FitMethod == 1) {
-      c2[i] = ScaledChi2(Bkgd, Sig);
-    } else if (FitMethod == 2) {
-      c2[i] = StandardChi2(NExp);
-    } else if (FitMethod == 3) {
-      // Likelihood: "Standard" (N syst, N nuisance)
-      // Calculate the likelihood (x2 for chi)
-      c2[i] = StandardLikelihood();
-    } else if (FitMethod == 4) {
-      // Likelihood: Bin by Bin Calculation of Systematics
-      // Calculate the likelihood (x2 for chi)
-      c2[i] = BinLikelihood();
-    } else {
-      cout << "Error in GetMinLikelihoodSterileFit(): Unknown 'FitMethod'." << endl;
+      if (c2 < theLikelihood) {
+        theLikelihood = c2;
+        minSinSqTh14 = gridSinSTH14;
+        minSinSqTh24 = gridSinSTH24;
+      }
     }
   }
 
-  TGraph * g = new TGraph(ns, th13, c2);
-  fit = new TF1("pol6", "pol6");
-  g->Fit(fit, "Q"); // fit to second order polynominal
-  minchi2 = fit->GetMinimum(0, max);
+  for (int i = -5; i < 6; i++) {
+    double gridSinSTH14 = minSinSqTh14 + i * 0.01;
+    for (int j = -5; j < 6; j++) {
+      double gridSinSTH24 = minSinSqTh24 + j * 0.01;
+      for (unsigned int ie = 0; ie < Extrap.size(); ie++) {
+        Extrap[ie]->SetOscPar(OscPar::kTh14, TMath::ASin(TMath::Sqrt(gridSinSTH14)));
+        Extrap[ie]->SetOscPar(OscPar::kTh24, TMath::ASin(TMath::Sqrt(gridSinSTH24)));
+        Extrap[ie]->OscillatePrediction();
+      }
+      Bkgd->Reset();
+      Sig->Reset();
+      NExp->Reset();
+      for (unsigned int ie = 0; ie < Extrap.size(); ie++) {
+        Bkgd->Add(Extrap[ie]->Pred_TotalBkgd_VsBinNumber);
+        Sig->Add(Extrap[ie]->Pred_Signal_VsBinNumber);
+      }
+      NExp->Add(Bkgd);
+      NExp->Add(Sig);
 
-  return minchi2;
+      double c2;
+      switch (FitMethod) {
+        case 0: {
+          c2 = PoissonChi2(NExp);
+          break;
+        }
+        case 1: {
+          c2 = ScaledChi2(Bkgd, Sig);
+          break;
+        }
+        case 2: {
+          c2 = StandardChi2(NExp);
+          break;
+        }
+        case 3: {
+          c2 = StandardLikelihood();
+          break;
+        }
+        case 4: {
+          c2 = BinLikelihood();
+          break;
+        }
+        default: {
+          cout << "Error in GetMinLikelihoodSterileFit(): Unknown 'FitMethod'. BinLikelihood() is used." << endl;
+          c2 = BinLikelihood();
+          break;
+        }
+      }
+
+      if (c2 < theLikelihood) {
+        theLikelihood = c2;
+        minSinSqTh14 = gridSinSTH14;
+        minSinSqTh24 = gridSinSTH24;
+      }
+    }
+  }
+
+  return theLikelihood;
 }
