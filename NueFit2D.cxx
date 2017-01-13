@@ -19,9 +19,9 @@ static void dlnlFunction(int &npar, double * /*gin*/, double &result, double * p
 static void globalGridFunction(int &, double * /*gin*/, double &likelihoodValue, double * gridPar, int /*iflag*/) {
 
   std::vector<double> f;
-  NueFit2D * nf2d = (NueFit2D *) gMinuit->GetObjectFit();
+  NueFit2D * nf2d = (NueFit2D *) theMinuit->GetObjectFit();
 
-  for (Int_t i = 0; i < 2; i++) {
+  for (Int_t i = 0; i < 6; i++) {
     f.push_back(gridPar[i]);
   }
   likelihoodValue = nf2d->StdLikeComparisonForGlobalMinSterileFit(f);
@@ -63,19 +63,18 @@ double NueFit2D::StdLikeComparisonForGlobalMinSterileFit(vector<double> npar) {
 
   for (unsigned int ie = 0; ie < Extrap.size(); ie++) {
     Extrap[ie]->GetPrediction();
+    Extrap[ie]->SetOscPar(OscPar::kTh14, TMath::ASin(TMath::Sqrt(npar.at(0))));
+    Extrap[ie]->SetOscPar(OscPar::kTh24, TMath::ASin(TMath::Sqrt(npar.at(1))));
+    Extrap[ie]->SetOscPar(OscPar::kTh34, npar.at(2));
+    Extrap[ie]->SetOscPar(OscPar::kDelta, npar.at(3));
+    Extrap[ie]->SetOscPar(OscPar::kDelta14, npar.at(4));
+    Extrap[ie]->SetOscPar(OscPar::kDelta24, npar.at(5) + npar.at(4));
     Extrap[ie]->SetOscPar(OscPar::kTh12, grid_n_th12);
     Extrap[ie]->SetOscPar(OscPar::kTh13, grid_n_th13);
     Extrap[ie]->SetOscPar(OscPar::kTh23, grid_n_th23);
     Extrap[ie]->SetOscPar(OscPar::kDeltaM12, grid_n_dm2_21);
     Extrap[ie]->SetOscPar(OscPar::kDeltaM23, grid_n_dm2_32);
     Extrap[ie]->SetOscPar(OscPar::kDm41, grid_dmsq41);
-    Extrap[ie]->SetOscPar(OscPar::kTh34, grid_th34);
-    Extrap[ie]->SetOscPar(OscPar::kDelta, grid_delta13);
-    Extrap[ie]->SetOscPar(OscPar::kDelta14, grid_delta14);
-    Extrap[ie]->SetOscPar(OscPar::kDelta24, grid_delta24);
-
-    Extrap[ie]->SetOscPar(OscPar::kTh14, TMath::ASin(TMath::Sqrt(npar.at(0))));
-    Extrap[ie]->SetOscPar(OscPar::kTh24, TMath::ASin(TMath::Sqrt(npar.at(1))));
     Extrap[ie]->OscillatePrediction();
   }
 
@@ -131,28 +130,54 @@ double NueFit2D::StdLikeComparisonForGlobalMinSterileFit(vector<double> npar) {
 }
 
 double NueFit2D::DoGlobalMinSearchSterileFit(vector<double> SinStart) {
-  TMinuit *ssgMinuit = new TMinuit(2);
-  gMinuit = ssgMinuit;
+  TMinuit *ssgMinuit = new TMinuit(6);
+  theMinuit = ssgMinuit;
   ssgMinuit->SetObjectFit(this);
   ssgMinuit->SetFCN(globalGridFunction);
   ssgMinuit->SetPrintLevel(1);
 
-  Double_t * startValue = new Double_t[2];
-  Double_t * stepValue = new Double_t[2];
-  Double_t * Bmin = new Double_t[2];
-  Double_t * Bmax = new Double_t[2];
+  Double_t * startValue = new Double_t[6];
+  Double_t * stepValue = new Double_t[6];
+  Double_t * Bmin = new Double_t[6];
+  Double_t * Bmax = new Double_t[6];
   Int_t iErflg = 0;
   double arglist[1];
   arglist[0] = 1.e-2;
 
   // Set the parameters
-  for (Int_t i = 0; i < 2; i++) {
+  for (Int_t i = 0; i < 2; i++) { // SinSqTh14, SinSqTh24
     startValue[i] = SinStart.at(i);
     stepValue[i] = 0.01;
     Bmin[i] = 0.0;
     Bmax[i] = 1.0;
     ssgMinuit->mnparm(i, Form("Sin%i", i), startValue[i], stepValue[i], Bmin[i], Bmax[i], iErflg);
   }
+  // Theta34
+  startValue[2] = 0.0;
+  stepValue[2] = TMath::Pi() / 4;
+  Bmin[2] = 0.0;
+  Bmax[2] = TMath::Pi() / 2;
+  ssgMinuit->mnparm(2, Form("Sin%i", 2), startValue[2], stepValue[2], Bmin[2], Bmax[2], iErflg);
+
+  // Delta13
+  startValue[3] = 0.0;
+  stepValue[3] = 2 * TMath::Pi() / 3;
+  Bmin[3] = 0.0;
+  Bmax[3] = 4 * TMath::Pi() / 3;
+  ssgMinuit->mnparm(3, Form("Sin%i", 3), startValue[3], stepValue[3], Bmin[3], Bmax[3], iErflg);
+
+  // DeltaEff
+  startValue[4] = 0.0;
+  stepValue[4] = 0.01;
+  Bmin[4] = 0.0;
+  Bmax[4] = 0.0;
+  ssgMinuit->mnparm(4, Form("Sin%i", 4), startValue[4], stepValue[4], Bmin[4], Bmax[4], iErflg);
+  startValue[5] = 0.0;
+  stepValue[5] = TMath::Pi() / 4;
+  Bmin[5] = 0.0;
+  Bmax[5] = 7 * TMath::Pi() / 4;
+  ssgMinuit->mnparm(5, Form("Sin%i", 5), startValue[5], stepValue[5], Bmin[5], Bmax[5], iErflg);
+
   ssgMinuit->mnexcm("SET EPS", arglist, 1, iErflg);
 
   // Resets function value and errors to UNDEFINED:
