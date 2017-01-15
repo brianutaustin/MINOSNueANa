@@ -304,7 +304,7 @@ class NueFit2D: public TObject {
     **/
 public:
     void ReadGridFilesSterileFit();
-    void RunMultiBinPseudoExptsSterileFit(bool);
+    void RunMultiBinPseudoExptsSterileFit(bool, int);
     void RunSterileFit(); // Obsolete (don't use except when you're Dung)
     double GetMinLikelihoodSterileFit();
     double DoGlobalMinSearchSterileFit(vector<double>);

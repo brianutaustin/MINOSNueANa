@@ -5944,7 +5944,7 @@ void NueFit2D::RunSterileFit() {
 /* Dung Code
 */
 
-void NueFit2D::RunMultiBinPseudoExptsSterileFit(bool Print) {
+void NueFit2D::RunMultiBinPseudoExptsSterileFit(bool Print, int profileGridIndex) {
   if (FitMethod == 1 && (FracErr_Bkgd == 0 || FracErr_Sig == 0)) {
     cout << "FracErr_Bkgd and FracErr_Sig need to be set for ScaledChi2.  Quitting..." << endl;
     return;
@@ -6025,8 +6025,8 @@ void NueFit2D::RunMultiBinPseudoExptsSterileFit(bool Print) {
     myfile.open(gSystem->ExpandPathName(file.c_str()));
   }
 
-  for (unsigned int i = 0; i < 1; i++) { // Testing with only one point
-  //for (unsigned int i = 0; i < nPts_Normal; i++) {
+  //for (unsigned int i = 0; i < 1; i++) { // Testing with only one point
+  for (unsigned int i = profileGridIndex; i < profileGridIndex + 1; i++) {
     cout << "point " << (i + 1) << "/" << nPts_Normal << " (normal hierarchy)" << endl;
 
     nexp_bkgd->Reset();
@@ -6124,7 +6124,8 @@ void NueFit2D::RunMultiBinPseudoExptsSterileFit(bool Print) {
         Sig->Reset();
         Sig->Add(nexp_signal);
         delchi2 = BinLikelihood() - chi2min;
-	cout << "Delta Chisquare for pseudo-exp " << u << " of point " << i << " is " << delchi2 << endl;
+        cout << "Delta Chisquare min pseudo-exp " << u << " of point " << i << " is " << chi2min << endl;
+	      cout << "Delta Chisquare for pseudo-exp " << u << " of point " << i << " is " << delchi2 << endl;
       } else {
         cout << "Error in RunMultiBinPseudoExpts(): Unknown 'FitMethod'." << endl;
       }
